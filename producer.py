@@ -20,6 +20,35 @@ class Producer:
     
     def sample_topic(self):
         # generate a random topic t in the market
-        # such that the probability of t is proportional to self.topic_probability(t)
+        return np.array([np.random.uniform(self.market.topics_bounds[i, 0], self.market.topics_bounds[i, 1]) for i in range(self.market.topics_dim)])
+    
+    def utility(self, topics: list[np.ndarray], production_rate) -> float:
+        if len(topics) != self.market.num_producers:
+            raise ValueError("Number of topics does not match number of producers.")
+        
+        influencer_reward = 0
+        for influencer in self.market.influencers:
+            for consumer in self.market.consumers:
+                if not influencer.producer_following_rates[self.index] > 0:
+                    continue
+                if not consumer.influencer_following_rates[influencer.index] > 0:
+                    continue
+                # TODO: check that consumer and producer (self) aren't the same
 
-        raise NotImplementedError("Implement this method.")
+                consumer_interest = self.topic_probability(topics[self.index]) * consumer.consumption_topic_interest(topics[self.index])
+                delay = np.exp(-influencer.delay_sensitivity * (1 / influencer.producer_following_rates[self.index] + 1 / consumer.influencer_following_rates[influencer.index]))
+
+                influencer_reward += production_rate * consumer_interest * delay
+
+        direct_consumer_reward = 0
+        for consumer in self.market.consumers:
+            if not consumer.producer_following_rates[self.index] > 0:
+                continue
+            # TODO: check that consumer and producer (self) aren't the same
+
+            consumer_interest = self.topic_probability(topics[self.index]) * consumer.consumption_topic_interest(topics[self.index])
+            delay = np.exp(-consumer.delay_sensitivity * (1 / consumer.producer_following_rates[self.index]))
+
+            direct_consumer_reward += production_rate * consumer_interest * delay
+
+        return influencer_reward + direct_consumer_reward
