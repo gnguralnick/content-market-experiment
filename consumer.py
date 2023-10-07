@@ -67,11 +67,9 @@ class Consumer:
         self._influencer_following_rates = {i: vector[i + self.market.num_producers] for i in range(self.market.num_influencers)}
         self._external_following_rate = vector[-1]
 
-    def consumption_utility(self, topics: list[np.ndarray], production_rate: float, external_production_rate: float) -> float:
+    def utility(self, topics: list[np.ndarray], production_rate: float, external_production_rate: float) -> float:
         if len(topics) != self.market.num_producers:
             raise ValueError("Number of topics does not match number of producers.")
-        if production_rate + external_production_rate > 1:
-            raise ValueError("Production rate exceeds 1.")
         
         influencer_reward = 0
         for influencer in self.market.influencers:
