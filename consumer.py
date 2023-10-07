@@ -1,5 +1,6 @@
 from content_market import ContentMarket
 import numpy as np
+from typing import cast
 
 
 class Consumer:
@@ -67,33 +68,46 @@ class Consumer:
         self._influencer_following_rates = {i: vector[i + self.market.num_producers] for i in range(self.market.num_influencers)}
         self._external_following_rate = vector[-1]
 
-    def utility(self, topics: list[np.ndarray], production_rate: float, external_production_rate: float) -> float:
-        if len(topics) != self.market.num_producers:
+    @staticmethod
+    def utility(following_rate_vector: np.array, *args) -> float:
+        consumer: Consumer = cast(Consumer, args[0])
+        topics: list[np.ndarray] = cast(list[np.ndarray], args[1])
+        production_rate: float = cast(float, args[2])
+        external_production_rate: float = cast(float, args[3])
+
+        if len(topics) != consumer.market.num_producers:
             raise ValueError("Number of topics does not match number of producers.")
         
+        consumer.set_following_rate_vector(following_rate_vector)
+        
         influencer_reward = 0
-        for influencer in self.market.influencers:
-            for producer in self.market.producers:
+        for influencer in consumer.market.influencers:
+            for producer in consumer.market.producers:
                 if not influencer.producer_following_rates[producer.index] > 0:
                     continue
-                if not self.influencer_following_rates[influencer.index] > 0:
+                if not consumer.influencer_following_rates[influencer.index] > 0:
                     continue
 
-                topic_reward = producer.topic_probability(topics[producer.index]) * self.consumption_topic_interest(topics[producer.index])
-                delay = np.exp(-self.delay_sensitivity * (1 / influencer.producer_following_rates[producer.index] + 1 / self.influencer_following_rates[influencer.index]))
+                # TODO: check that producer is not same as consumer
+
+                topic_reward = producer.topic_probability(topics[producer.index]) * consumer.consumption_topic_interest(topics[producer.index])
+                delay = np.exp(-consumer.delay_sensitivity * (1 / influencer.producer_following_rates[producer.index] + 1 / consumer.influencer_following_rates[influencer.index]))
 
                 influencer_reward += production_rate * topic_reward * delay
         
         direct_following_reward = 0
-        for producer in self.market.producers:
-            if not self.producer_following_rates[producer.index] > 0:
+        for producer in consumer.market.producers:
+            if not consumer.producer_following_rates[producer.index] > 0:
                 continue
-            topic_reward = producer.topic_probability(topics[producer.index]) * self.consumption_topic_interest(topics[producer.index])
-            delay = np.exp(-self.delay_sensitivity * (1 / self.producer_following_rates[producer.index]))
+
+            # TODO: check that producer is not same as consumer
+            
+            topic_reward = producer.topic_probability(topics[producer.index]) * consumer.consumption_topic_interest(topics[producer.index])
+            delay = np.exp(-consumer.delay_sensitivity * (1 / consumer.producer_following_rates[producer.index]))
             direct_following_reward += production_rate * topic_reward * delay
 
         external_reward = 0
-        if self.external_following_rate > 0:
-            external_reward = external_production_rate * self.external_interest_prob * np.exp(-self.delay_sensitivity * (1 / self.external_following_rate))
+        if consumer.external_following_rate > 0:
+            external_reward = external_production_rate * consumer.external_interest_prob * np.exp(-consumer.delay_sensitivity * (1 / consumer.external_following_rate))
 
         return influencer_reward + direct_following_reward + external_reward

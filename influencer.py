@@ -1,3 +1,4 @@
+from typing import cast
 import numpy as np
 from content_market import ContentMarket
 
@@ -32,21 +33,28 @@ class Influencer:
             raise ValueError("Following rate vector has wrong length.")
         self.producer_following_rates = {i: following_rate_vector[i] for i in range(self.market.num_producers)}
 
-    def utility(self, topics: list[np.ndarray], production_rate) -> float:
-        if len(topics) != self.market.num_producers:
+    @staticmethod
+    def utility(following_rate_vector: np.ndarray, *args) -> float:
+        influencer = cast(Influencer, args[0])
+        production_rate = cast(float, args[1])
+        topics = cast(list[np.ndarray], args[2])
+
+        if len(topics) != influencer.market.num_producers:
             raise ValueError("Number of topics does not match number of producers.")
         
+        influencer.set_following_rate_vector(following_rate_vector)
+        
         reward = 0
-        for consumer in self.market.consumers:
-            for producer in self.market.producers:
+        for consumer in influencer.market.consumers:
+            for producer in influencer.market.producers:
                 # TODO: check that consumer and producer aren't the same
                 if not consumer.producer_following_rates[producer.index] > 0:
                     continue
-                if not self.producer_following_rates[producer.index] > 0:
+                if not influencer.producer_following_rates[producer.index] > 0:
                     continue
 
                 consumer_interest = producer.topic_probability(topics[producer.index]) * consumer.consumption_topic_interest(topics[producer.index])
-                delay = np.exp(-self.delay_sensitivity * (1 / self.producer_following_rates[producer.index] + 1 / consumer.influencer_following_rates[self.index]))
+                delay = np.exp(-influencer.delay_sensitivity * (1 / influencer.producer_following_rates[producer.index] + 1 / consumer.influencer_following_rates[influencer.index]))
 
                 reward += production_rate * consumer_interest * delay
 
