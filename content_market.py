@@ -43,14 +43,14 @@ class ContentMarket:
         if not np.all(topic >= self.topics_bounds[:, 0]) or not np.all(topic <= self.topics_bounds[:, 1]):
             raise ValueError("Topic is not in the market.")
         
-    def optimize(self, production_rate, external_production_rate):
+    def optimize(self, production_rate, external_production_rate, max_iterations=100):
         """
         Optimize the market. This is done by iteratively optimizing the utility functions of the producers, consumers, and influencers.
         """
 
         producer_topics = [producer.sample_topic() for producer in self.producers]
         
-        while True:
+        for i in range(max_iterations):
             # optimize consumers
             for consumer in self.consumers:
                 attention_constraint = LinearConstraint(np.ones(self.num_producers + self.num_influencers + 1), lb=0, ub=consumer.attention_bound)
@@ -97,5 +97,7 @@ class ContentMarket:
                 producer.main_interest = result.x
 
             producer_topics = [producer.sample_topic() for producer in self.producers]
+
+            print(f"Iteration {i} / {max_iterations} done.")
 
             # TODO: check if we are done
