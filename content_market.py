@@ -1,8 +1,6 @@
 import numpy as np
 
-from consumer import Consumer
-from influencer import Influencer
-from producer import Producer
+from agents import Consumer, Producer, Influencer
 
 from scipy.optimize import minimize, LinearConstraint
 
