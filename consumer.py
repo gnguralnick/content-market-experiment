@@ -101,7 +101,7 @@ class Consumer:
                 continue
 
             # TODO: check that producer is not same as consumer
-            
+
             topic_reward = producer.topic_probability(topics[producer.index]) * consumer.consumption_topic_interest(topics[producer.index])
             delay = np.exp(-consumer.delay_sensitivity * (1 / consumer.producer_following_rates[producer.index]))
             direct_following_reward += production_rate * topic_reward * delay
@@ -111,3 +111,7 @@ class Consumer:
             external_reward = external_production_rate * consumer.external_interest_prob * np.exp(-consumer.delay_sensitivity * (1 / consumer.external_following_rate))
 
         return influencer_reward + direct_following_reward + external_reward
+
+    @staticmethod
+    def minimization_utility(following_rate_vector: np.ndarray, *args) -> float:
+        return -1 * Consumer.utility(following_rate_vector, *args)

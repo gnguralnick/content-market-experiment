@@ -4,6 +4,8 @@ from consumer import Consumer
 from influencer import Influencer
 from producer import Producer
 
+from scipy.optimize import minimize, LinearConstraint
+
 class ContentMarket:
     """
     A content market where producers, consumers, and influencers react.
@@ -41,4 +43,59 @@ class ContentMarket:
         if not np.all(topic >= self.topics_bounds[:, 0]) or not np.all(topic <= self.topics_bounds[:, 1]):
             raise ValueError("Topic is not in the market.")
         
-    
+    def optimize(self, production_rate, external_production_rate):
+        """
+        Optimize the market. This is done by iteratively optimizing the utility functions of the producers, consumers, and influencers.
+        """
+
+        producer_topics = [producer.sample_topic() for producer in self.producers]
+        
+        while True:
+            # optimize consumers
+            for consumer in self.consumers:
+                attention_constraint = LinearConstraint(np.ones(self.num_producers + self.num_influencers + 1), lb=0, ub=consumer.attention_bound)
+
+                result = minimize(
+                    fun=Consumer.utility,
+                    x0=consumer.get_following_rate_vector(),
+                    args=(consumer, producer_topics, production_rate, external_production_rate),
+                    constraints=attention_constraint,
+                )
+
+                if not result.success:
+                    raise RuntimeError("Optimization failed: " + result.message)
+
+                consumer.set_following_rate_vector(result.x)
+
+            # optimize influencers
+            for influencer in self.influencers:
+                attention_constraint = LinearConstraint(np.ones(self.num_producers), lb=0, ub=influencer.attention_bound)
+
+                result = minimize(
+                    fun=Influencer.utility,
+                    x0=influencer.get_following_rate_vector(),
+                    args=(influencer, production_rate, producer_topics),
+                    constraints=attention_constraint,
+                )
+
+                if not result.success:
+                    raise RuntimeError("Optimization failed: " + result.message)
+
+                influencer.set_following_rate_vector(result.x)
+
+            # optimize producers
+            for producer in self.producers:
+                result = minimize(
+                    fun=Producer.utility,
+                    x0=producer_topics[producer.index],
+                    args=(producer, production_rate),
+                )
+
+                if not result.success:
+                    raise RuntimeError("Optimization failed: " + result.message)
+
+                producer.main_interest = result.x
+
+            producer_topics = [producer.sample_topic() for producer in self.producers]
+
+            # TODO: check if we are done

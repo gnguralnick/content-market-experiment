@@ -54,3 +54,7 @@ class Producer:
             direct_consumer_reward += production_rate * consumer_interest * delay
 
         return influencer_reward + direct_consumer_reward
+    
+    @staticmethod
+    def minimization_utility(topic: np.ndarray, *args) -> float:
+        return -1 * Producer.utility(topic, *args)
