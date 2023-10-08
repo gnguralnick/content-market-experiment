@@ -1,24 +1,31 @@
 from content_market import ContentMarket
 import numpy as np
-from typing import cast
+from typing import cast, Callable
 
 
 class Consumer:
-    def __init__(self, market: ContentMarket, main_interest: np.ndarray, topic_interest_function, attention_bound, index, external_interest_prob, delay_sensitivity):
-        self.market = market
+    def __init__(self, main_interest: np.ndarray, topic_interest_function: Callable[[float], float], attention_bound, index, external_interest_prob, delay_sensitivity):
+        self.market = None
         self.main_interest = main_interest
-        if not market.check_topic(main_interest):
-            raise ValueError("Main interest is not in the market.")
+
+        self._producer_following_rates = dict()
+        self._influencer_following_rates = dict()
 
         self._topic_interest_function = topic_interest_function
         self.attention_bound = attention_bound
-        self._producer_following_rates = {i: 0 for i in range(market.num_producers) if i != index}
-        self._influencer_following_rates = {i: 0 for i in range(market.num_influencers)}
+        
         self.index = index
         self._external_following_rate = 0
         self.external_interest_prob = external_interest_prob
         self.delay_sensitivity = delay_sensitivity
 
+    def set_market(self, market: ContentMarket):
+        self.market = market
+        if not market.check_topic(self.main_interest):
+            raise ValueError("Main interest is not in the market.")
+        
+        self._producer_following_rates = {i: 0 for i in range(market.num_producers) if i != self.index}
+        self._influencer_following_rates = {i: 0 for i in range(market.num_influencers)}
 
     def consumption_topic_interest(self, topic: np.ndarray) -> float:
         if not self.market.check_topic(topic):
@@ -27,7 +34,7 @@ class Consumer:
         return self._topic_interest_function(distance)
 
     @property
-    def producer_following_rates(self):
+    def producer_following_rates(self) -> dict[int, float]:
         return self._producer_following_rates
     
     @producer_following_rates.setter
@@ -37,7 +44,7 @@ class Consumer:
         self._producer_following_rates = value
 
     @property
-    def influencer_following_rates(self):
+    def influencer_following_rates(self) -> dict[int, float]:
         return self._influencer_following_rates
     
     @influencer_following_rates.setter
@@ -71,6 +78,8 @@ class Consumer:
     @staticmethod
     def utility(following_rate_vector: np.array, *args) -> float:
         consumer: Consumer = cast(Consumer, args[0])
+        if consumer.market is None:
+            raise ValueError("Consumer has no market.")
         topics: list[np.ndarray] = cast(list[np.ndarray], args[1])
         production_rate: float = cast(float, args[2])
         external_production_rate: float = cast(float, args[3])

@@ -4,19 +4,24 @@ from content_market import ContentMarket
 
 class Influencer:
 
-    def __init__(self, market: ContentMarket, main_interest: np.ndarray, attention_bound, index, delay_sensitivity):
-        self.market = market
+    def __init__(self, main_interest: np.ndarray, attention_bound, index, delay_sensitivity):
+        self.market = None
         self.main_interest = main_interest
-        if not market.check_topic(main_interest):
-            raise ValueError("Main interest is not in the market.")
         
         self.attention_bound = attention_bound
         self.index = index
-        self._producer_following_rates = {i: 0 for i in range(market.num_producers)}
+        self._producer_following_rates = dict()
         self.delay_sensitivity = delay_sensitivity
 
+    def set_market(self, market: ContentMarket):
+        self.market = market
+        if not market.check_topic(self.main_interest):
+            raise ValueError("Main interest is not in the market.")
+        
+        self._producer_following_rates = {i: 0 for i in range(market.num_producers)}
+
     @property
-    def producer_following_rates(self):
+    def producer_following_rates(self) -> dict[int, float]:
         return self._producer_following_rates
     
     @producer_following_rates.setter
@@ -36,6 +41,8 @@ class Influencer:
     @staticmethod
     def utility(following_rate_vector: np.ndarray, *args) -> float:
         influencer = cast(Influencer, args[0])
+        if influencer.market is None:
+            raise ValueError("Influencer has no market.")
         production_rate = cast(float, args[1])
         topics = cast(list[np.ndarray], args[2])
 

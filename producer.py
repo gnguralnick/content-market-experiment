@@ -4,14 +4,17 @@ from content_market import ContentMarket
 
 class Producer:
 
-    def __init__(self, market: ContentMarket, main_interest: np.ndarray, topic_interest_function, index):
-        self.market = market
+    def __init__(self, main_interest: np.ndarray, topic_interest_function, index):
+        self.market = None
         self.main_interest = main_interest
-        if not market.check_topic(main_interest):
-            raise ValueError("Main interest is not in the market.")
         
         self._topic_interest_function = topic_interest_function
         self.index = index
+
+    def set_market(self, market: ContentMarket):
+        self.market = market
+        if not market.check_topic(self.main_interest):
+            raise ValueError("Main interest is not in the market.")
 
     def topic_probability(self, topic: np.ndarray) -> float:
         if not self.market.check_topic(topic):
@@ -26,6 +29,8 @@ class Producer:
     @staticmethod
     def utility(topic: np.ndarray, *args) -> float:
         producer = cast(Producer, args[0])
+        if producer.market is None:
+            raise ValueError("Producer has no market.")
         production_rate = cast(float, args[2])
         
         influencer_reward = 0

@@ -22,20 +22,23 @@ class ContentMarket:
         self.num_consumers = num_consumers
         self.num_influencers = num_influencers
 
-    def add_consumer(self, main_topic, topic_interest_function, attention_bound):
+    def add_consumer(self, consumer: Consumer):
         if len(self.consumers) >= self.num_consumers:
             raise ValueError("Number of consumers exceeds limit.")
-        self.consumers.append(Consumer(self, main_topic, topic_interest_function, attention_bound, len(self.consumers)))
+        self.consumers.append(consumer)
+        consumer.set_market(self)
 
-    def add_producer(self, main_topic, topic_interest_function):
+    def add_producer(self, producer: Producer):
         if len(self.producers) >= self.num_producers:
             raise ValueError("Number of producers exceeds limit.")
-        self.producers.append(Producer(self, main_topic, topic_interest_function, len(self.producers)))
+        self.producers.append(producer)
+        producer.set_market(self)
 
-    def add_influencer(self, main_topic, attention_bound):
+    def add_influencer(self, influencer: Influencer):
         if len(self.influencers) >= self.num_influencers:
             raise ValueError("Number of influencers exceeds limit.")
-        self.influencers.append(Influencer(self, main_topic, attention_bound, len(self.influencers)))
+        self.influencers.append(influencer)
+        influencer.set_market(self)
 
     def check_topic(self, topic: np.ndarray):
         if topic.shape != (self.topics_dim,):
