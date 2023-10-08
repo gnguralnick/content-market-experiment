@@ -4,7 +4,7 @@ from typing import cast, Callable
 
 
 class Consumer:
-    def __init__(self, main_interest: np.ndarray, topic_interest_function: Callable[[float], float], attention_bound, index, external_interest_prob, delay_sensitivity):
+    def __init__(self, index: int, main_interest: np.ndarray, topic_interest_function: Callable[[float], float], attention_bound, external_interest_prob, delay_sensitivity):
         self.market = None
         self.main_interest = main_interest
 
@@ -97,7 +97,8 @@ class Consumer:
                 if not consumer.influencer_following_rates[influencer.index] > 0:
                     continue
 
-                # TODO: check that producer is not same as consumer
+                if consumer.index == producer.index:
+                    continue
 
                 topic_reward = producer.topic_probability(topics[producer.index]) * consumer.consumption_topic_interest(topics[producer.index])
                 delay = np.exp(-consumer.delay_sensitivity * (1 / influencer.producer_following_rates[producer.index] + 1 / consumer.influencer_following_rates[influencer.index]))
@@ -109,7 +110,8 @@ class Consumer:
             if not consumer.producer_following_rates[producer.index] > 0:
                 continue
 
-            # TODO: check that producer is not same as consumer
+            if consumer.index == producer.index:
+                continue
 
             topic_reward = producer.topic_probability(topics[producer.index]) * consumer.consumption_topic_interest(topics[producer.index])
             delay = np.exp(-consumer.delay_sensitivity * (1 / consumer.producer_following_rates[producer.index]))

@@ -4,7 +4,7 @@ from content_market import ContentMarket
 
 class Influencer:
 
-    def __init__(self, main_interest: np.ndarray, attention_bound, index, delay_sensitivity):
+    def __init__(self, index: int, main_interest: np.ndarray, attention_bound, delay_sensitivity):
         self.market = None
         self.main_interest = main_interest
         
@@ -54,10 +54,11 @@ class Influencer:
         reward = 0
         for consumer in influencer.market.consumers:
             for producer in influencer.market.producers:
-                # TODO: check that consumer and producer aren't the same
                 if not consumer.producer_following_rates[producer.index] > 0:
                     continue
                 if not influencer.producer_following_rates[producer.index] > 0:
+                    continue
+                if consumer.index == producer.index:
                     continue
 
                 consumer_interest = producer.topic_probability(topics[producer.index]) * consumer.consumption_topic_interest(topics[producer.index])

@@ -4,7 +4,7 @@ from content_market import ContentMarket
 
 class Producer:
 
-    def __init__(self, main_interest: np.ndarray, topic_interest_function, index):
+    def __init__(self, index: int, main_interest: np.ndarray, topic_interest_function):
         self.market = None
         self.main_interest = main_interest
         
@@ -40,7 +40,8 @@ class Producer:
                     continue
                 if not consumer.influencer_following_rates[influencer.index] > 0:
                     continue
-                # TODO: check that consumer and producer (producer) aren't the same
+                if consumer.index == producer.index:
+                    continue
 
                 consumer_interest = producer.topic_probability(topic) * consumer.consumption_topic_interest(topic)
                 delay = np.exp(-influencer.delay_sensitivity * (1 / influencer.producer_following_rates[producer.index] + 1 / consumer.influencer_following_rates[influencer.index]))
@@ -51,7 +52,8 @@ class Producer:
         for consumer in producer.market.consumers:
             if not consumer.producer_following_rates[producer.index] > 0:
                 continue
-            # TODO: check that consumer and producer (producer) aren't the same
+            if consumer.index == producer.index:
+                continue
 
             consumer_interest = producer.topic_probability(topic) * consumer.consumption_topic_interest(topic)
             delay = np.exp(-consumer.delay_sensitivity * (1 / consumer.producer_following_rates[producer.index]))
