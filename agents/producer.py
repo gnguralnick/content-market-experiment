@@ -40,7 +40,7 @@ class Producer:
                     continue
                 if not consumer.influencer_following_rates[influencer.index] > 0:
                     continue
-                if consumer.index == producer.index:
+                if consumer == producer:
                     continue
 
                 consumer_interest = producer.topic_probability(topic) * consumer.consumption_topic_interest(topic)
@@ -52,7 +52,7 @@ class Producer:
         for consumer in producer.market.consumers:
             if not consumer.producer_following_rates[producer.index] > 0:
                 continue
-            if consumer.index == producer.index:
+            if consumer == producer:
                 continue
 
             consumer_interest = producer.topic_probability(topic) * consumer.consumption_topic_interest(topic)
