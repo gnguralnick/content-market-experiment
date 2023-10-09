@@ -1,6 +1,8 @@
-from typing import cast
+from typing import cast, TYPE_CHECKING
+if TYPE_CHECKING:
+    from content_market import ContentMarket
+
 import numpy as np
-from content_market import ContentMarket
 
 class Producer:
 
@@ -11,7 +13,7 @@ class Producer:
         self._topic_interest_function = topic_interest_function
         self.index = index
 
-    def set_market(self, market: ContentMarket):
+    def set_market(self, market: 'ContentMarket'):
         self.market = market
         if not market.check_topic(self.main_interest):
             raise ValueError("Main interest is not in the market.")
@@ -22,16 +24,12 @@ class Producer:
         distance = np.linalg.norm(topic - self.main_interest)
         return self._topic_interest_function(distance)
     
-    def sample_topic(self):
-        # generate a random topic t in the market
-        return np.array([np.random.uniform(self.market.topics_bounds[i, 0], self.market.topics_bounds[i, 1]) for i in range(self.market.topics_dim)])
-    
     @staticmethod
     def utility(topic: np.ndarray, *args) -> float:
         producer = cast(Producer, args[0])
         if producer.market is None:
             raise ValueError("Producer has no market.")
-        production_rate = cast(float, args[2])
+        production_rate = cast(float, args[1])
         
         influencer_reward = 0
         for influencer in producer.market.influencers:

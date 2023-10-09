@@ -1,6 +1,7 @@
-from content_market import ContentMarket
 import numpy as np
-from typing import cast, Callable
+from typing import cast, Callable, TYPE_CHECKING
+if TYPE_CHECKING:
+    from content_market import ContentMarket
 
 
 class Consumer:
@@ -19,12 +20,12 @@ class Consumer:
         self.external_interest_prob = external_interest_prob
         self.delay_sensitivity = delay_sensitivity
 
-    def set_market(self, market: ContentMarket):
+    def set_market(self, market: 'ContentMarket'):
         self.market = market
         if not market.check_topic(self.main_interest):
             raise ValueError("Main interest is not in the market.")
         
-        self._producer_following_rates = {i: 0 for i in range(market.num_producers) if i != self.index}
+        self._producer_following_rates = {i: 0 for i in range(market.num_producers)}
         self._influencer_following_rates = {i: 0 for i in range(market.num_influencers)}
 
     def consumption_topic_interest(self, topic: np.ndarray) -> float:

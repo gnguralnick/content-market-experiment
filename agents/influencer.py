@@ -1,6 +1,8 @@
-from typing import cast
+from typing import cast, TYPE_CHECKING
+if TYPE_CHECKING:
+    from content_market import ContentMarket
+
 import numpy as np
-from content_market import ContentMarket
 
 class Influencer:
 
@@ -13,7 +15,7 @@ class Influencer:
         self._producer_following_rates = dict()
         self.delay_sensitivity = delay_sensitivity
 
-    def set_market(self, market: ContentMarket):
+    def set_market(self, market: 'ContentMarket'):
         self.market = market
         if not market.check_topic(self.main_interest):
             raise ValueError("Main interest is not in the market.")
