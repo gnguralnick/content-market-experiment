@@ -20,7 +20,12 @@ class Influencer:
         if not market.check_topic(self.main_interest):
             raise ValueError("Main interest is not in the market.")
         
-        self._producer_following_rates = {i: 0 for i in range(market.num_producers)}
+        # self._producer_following_rates = {i: 0 for i in range(market.num_producers)}
+
+        cur_sum = 0
+        for i in range(market.num_producers):
+            self._producer_following_rates[i] = np.random.uniform(0, self.attention_bound - cur_sum)
+            cur_sum += self._producer_following_rates[i]
 
     @property
     def producer_following_rates(self) -> dict[int, float]:
@@ -38,6 +43,8 @@ class Influencer:
     def set_following_rate_vector(self, following_rate_vector: np.array):
         if len(following_rate_vector) != self.market.num_producers:
             raise ValueError("Following rate vector has wrong length.")
+        if sum(following_rate_vector) - self.attention_bound > 1e-6:
+            raise ValueError("Sum of following rates exceeds attention bound.")
         self.producer_following_rates = {i: following_rate_vector[i] for i in range(self.market.num_producers)}
 
     @staticmethod

@@ -76,11 +76,11 @@ class ContentMarket:
                 )
 
                 if not result.success:
-                    raise RuntimeError("Optimization failed: " + result.message)
+                    raise RuntimeError("Optimization failed", result)
 
                 consumer.set_following_rate_vector(result.x)
 
-                consumer_utilities[-1].append(result.fun)
+                consumer_utilities[-1].append(-result.fun)
 
             # optimize influencers
             for influencer in self.influencers:
@@ -94,26 +94,28 @@ class ContentMarket:
                 )
 
                 if not result.success:
-                    raise RuntimeError("Optimization failed: " + result.message)
+                    raise RuntimeError("Optimization failed", result)
 
                 influencer.set_following_rate_vector(result.x)
 
-                influencer_utilities[-1].append(result.fun)
+                influencer_utilities[-1].append(-result.fun)
 
             # optimize producers
             for producer in self.producers:
+
                 result = minimize(
                     fun=Producer.minimization_utility,
                     x0=producer_topics[producer.index],
                     args=(producer, production_rate),
+                    bounds=self.topics_bounds,
                 )
 
                 if not result.success:
-                    raise RuntimeError("Optimization failed: " + result.message)
+                    raise RuntimeError("Optimization failed", result)
 
                 producer.main_interest = result.x
 
-                producer_utilities[-1].append(result.fun)
+                producer_utilities[-1].append(-result.fun)
 
             producer_topics = [self.sample_topic() for producer in self.producers]
 

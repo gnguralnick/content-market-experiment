@@ -30,6 +30,8 @@ class Producer:
         if producer.market is None:
             raise ValueError("Producer has no market.")
         production_rate = cast(float, args[1])
+
+        print('topic', topic)
         
         influencer_reward = 0
         for influencer in producer.market.influencers:
