@@ -56,74 +56,132 @@ class ContentMarket:
 
         producer_topics = [self.sample_topic() for producer in self.producers]
 
-        consumer_utilities = []
-        influencer_utilities = []
-        producer_utilities = []
+        consumer_stats = { consumer.index: { "following_rates": [consumer.get_following_rate_vector()], "utilities": [0], "rate_change": [] } for consumer in self.consumers }
+        influencer_stats = { influencer.index: { "following_rates": [influencer.get_following_rate_vector()], "utilities": [0], "rate_change": [] } for influencer in self.influencers }
+        producer_stats = { producer.index: { "topics": [producer.main_interest], "utilities": [0], "topic_change": [] } for producer in self.producers }
+        total_stats = { "consumer_utilities": [0], "influencer_utilities": [0], "producer_utilities": [0] }
+        average_stats = { "consumer_utilities": [0], "influencer_utilities": [0], "producer_utilities": [0], "consumer_rate_change": [], "influencer_rate_change": [], "producer_topic_change": [] }
         
         for i in range(max_iterations):
             # optimize consumers
-            consumer_utilities.append([])
-            influencer_utilities.append([])
-            producer_utilities.append([])
-            for consumer in self.consumers:
-                attention_constraint = LinearConstraint(np.ones(self.num_producers + self.num_influencers + 1), lb=0, ub=consumer.attention_bound)
+            total_stats["consumer_utilities"].append(0)
+            total_stats["influencer_utilities"].append(0)
+            total_stats["producer_utilities"].append(0)
 
-                result = minimize(
-                    fun=Consumer.minimization_utility,
-                    x0=consumer.get_following_rate_vector(),
-                    args=(consumer, producer_topics, production_rate, external_production_rate),
-                    constraints=attention_constraint,
-                )
+            if self.num_consumers > 0:
+                for consumer in self.consumers:
+                    attention_constraint = LinearConstraint(np.ones(self.num_producers + self.num_influencers + 1), lb=0, ub=consumer.attention_bound)
 
-                if not result.success:
-                    raise RuntimeError("Optimization failed", result)
+                    result = minimize(
+                        fun=Consumer.minimization_utility,
+                        x0=consumer.get_following_rate_vector(),
+                        args=(consumer, producer_topics, production_rate, external_production_rate),
+                        constraints=attention_constraint,
+                    )
 
-                consumer.set_following_rate_vector(result.x)
+                    if not result.success:
+                        raise RuntimeError("Optimization failed", result)
 
-                consumer_utilities[-1].append(-result.fun)
+                    consumer.set_following_rate_vector(result.x)
 
-            # optimize influencers
-            for influencer in self.influencers:
-                attention_constraint = LinearConstraint(np.ones(self.num_producers), lb=0, ub=influencer.attention_bound)
+                    rate_change = np.linalg.norm(result.x - consumer_stats[consumer.index]["following_rates"][-1])
 
-                result = minimize(
-                    fun=Influencer.minimization_utility,
-                    x0=influencer.get_following_rate_vector(),
-                    args=(influencer, production_rate, producer_topics),
-                    constraints=attention_constraint,
-                )
+                    consumer_stats[consumer.index]["following_rates"].append(result.x)
+                    consumer_stats[consumer.index]["rate_change"].append(rate_change)
+                    consumer_stats[consumer.index]["utilities"].append(-result.fun)
+                    total_stats["consumer_utilities"][-1] += -result.fun
+                average_stats["consumer_utilities"].append(total_stats["consumer_utilities"][-1] / self.num_consumers)
+                average_stats["consumer_rate_change"].append(np.mean([consumer_stats[consumer.index]["rate_change"][-1] for consumer in self.consumers]))
 
-                if not result.success:
-                    raise RuntimeError("Optimization failed", result)
 
-                influencer.set_following_rate_vector(result.x)
+            if self.num_influencers > 0:
+                # optimize influencers
+                for influencer in self.influencers:
+                    attention_constraint = LinearConstraint(np.ones(self.num_producers), lb=0, ub=influencer.attention_bound)
 
-                influencer_utilities[-1].append(-result.fun)
+                    result = minimize(
+                        fun=Influencer.minimization_utility,
+                        x0=influencer.get_following_rate_vector(),
+                        args=(influencer, production_rate, producer_topics),
+                        constraints=attention_constraint,
+                    )
 
-            # optimize producers
-            for producer in self.producers:
+                    if not result.success:
+                        raise RuntimeError("Optimization failed", result)
 
-                result = minimize(
-                    fun=Producer.minimization_utility,
-                    x0=producer_topics[producer.index],
-                    args=(producer, production_rate),
-                    bounds=self.topics_bounds,
-                )
+                    influencer.set_following_rate_vector(result.x)
 
-                if not result.success:
-                    raise RuntimeError("Optimization failed", result)
+                    rate_change = np.linalg.norm(result.x - influencer_stats[influencer.index]["following_rates"][-1])
 
-                producer.main_interest = result.x
+                    influencer_stats[influencer.index]["following_rates"].append(result.x)
+                    influencer_stats[influencer.index]["rate_change"].append(rate_change)
+                    influencer_stats[influencer.index]["utilities"].append(-result.fun)
+                    total_stats["influencer_utilities"][-1] += -result.fun
+                average_stats["influencer_utilities"].append(total_stats["influencer_utilities"][-1] / self.num_influencers)
+                average_stats["influencer_rate_change"].append(np.mean([influencer_stats[influencer.index]["rate_change"][-1] for influencer in self.influencers]))
 
-                producer_utilities[-1].append(-result.fun)
+            if self.num_producers > 0:
+                # optimize producers
+                for producer in self.producers:
+
+                    result = minimize(
+                        fun=Producer.minimization_utility,
+                        x0=producer_topics[producer.index],
+                        args=(producer, production_rate),
+                        bounds=self.topics_bounds,
+                    )
+
+                    if not result.success:
+                        raise RuntimeError("Optimization failed", result)
+
+                    producer.main_interest = result.x
+
+                    topic_change = np.linalg.norm(result.x - producer_stats[producer.index]["topics"][-1])
+
+                    producer_stats[producer.index]["topics"].append(result.x)
+                    producer_stats[producer.index]["topic_change"].append(topic_change)
+                    producer_stats[producer.index]["utilities"].append(-result.fun)
+                    total_stats["producer_utilities"][-1] += -result.fun
+                average_stats["producer_utilities"].append(total_stats["producer_utilities"][-1] / self.num_producers)
+                average_stats["producer_topic_change"].append(np.mean([producer_stats[producer.index]["topic_change"][-1] for producer in self.producers]))
 
             producer_topics = [self.sample_topic() for producer in self.producers]
 
             print(f"Iteration {i} / {max_iterations} done.")
-            print(f"\tConsumer utilities: {consumer_utilities[-1]}")
-            print(f"\tInfluencer utilities: {influencer_utilities[-1]}")
-            print(f"\tProducer utilities: {producer_utilities[-1]}")
 
-            # TODO: check if we are done
+            # check for convergence
+            # we've converged if the following rates and topics don't change anymore
+            # or if the utility doesn't change anymore
+            if i > 0:
+                if self.num_consumers > 0:
+                    consumer_avg_rate_change = average_stats["consumer_rate_change"][-1]
+                    consumer_avg_utility_change = abs(average_stats["consumer_utilities"][-1] - average_stats["consumer_utilities"][-2])
+                    print(f"Consumer rate change: {consumer_avg_rate_change}")
+                    print(f"Consumer utility change: {consumer_avg_utility_change}")
+                    consumer_convergence = consumer_avg_rate_change < 1e-6 or consumer_avg_utility_change < 1e-6
+                else:
+                    consumer_convergence = True
+
+                if self.num_influencers > 0:
+                    influencer_avg_rate_change = average_stats["influencer_rate_change"][-1]
+                    influencer_avg_utility_change = abs(average_stats["influencer_utilities"][-1] - average_stats["influencer_utilities"][-2])
+                    influencer_convergence = influencer_avg_rate_change < 1e-6 or influencer_avg_utility_change < 1e-6
+                    print(f"Influencer rate change: {influencer_avg_rate_change}")
+                    print(f"Influencer utility change: {influencer_avg_utility_change}")
+                else:
+                    influencer_convergence = True
+
+                if self.num_producers > 0:
+                    producer_avg_topic_change = average_stats["producer_topic_change"][-1]
+                    producer_avg_utility_change = abs(average_stats["producer_utilities"][-1] - average_stats["producer_utilities"][-2])
+                    producer_convergence = producer_avg_topic_change < 1e-6 or producer_avg_utility_change < 1e-6
+                    print(f"Producer topic change: {producer_avg_topic_change}")
+                    print(f"Producer utility change: {producer_avg_utility_change}")
+                else:
+                    producer_convergence = True
+                if consumer_convergence and influencer_convergence and producer_convergence:
+                    print("Converged.")
+                    break
+                
         
-        return consumer_utilities, influencer_utilities, producer_utilities
+        return consumer_stats, influencer_stats, producer_stats, total_stats, average_stats

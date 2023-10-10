@@ -97,7 +97,6 @@ class Consumer:
         if len(topics) != consumer.market.num_producers:
             raise ValueError("Number of topics does not match number of producers.")
         
-        print(following_rate_vector, sum(following_rate_vector), consumer.attention_bound)
         consumer.set_following_rate_vector(following_rate_vector)
         
         influencer_reward = 0
