@@ -63,7 +63,7 @@ class Influencer:
         reward = 0
         for consumer in influencer.market.consumers:
             for producer in influencer.market.producers:
-                if not consumer.producer_following_rates[producer.index] > 0:
+                if not consumer.influencer_following_rates[influencer.index] > 0:
                     continue
                 if not influencer.producer_following_rates[producer.index] > 0:
                     continue

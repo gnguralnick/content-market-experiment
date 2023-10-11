@@ -35,9 +35,7 @@ class Producer:
 
         return topic
 
-    
-    @staticmethod
-    def utility(topic: np.ndarray, *args) -> float:
+    def utility(self, topic: np.ndarray, *args) -> float:
         producer = cast(Producer, args[0])
         if producer.market is None:
             raise ValueError("Producer has no market.")
@@ -72,6 +70,5 @@ class Producer:
 
         return influencer_reward + direct_consumer_reward
     
-    @staticmethod
-    def minimization_utility(topic: np.ndarray, *args) -> float:
-        return -1 * Producer.utility(topic, *args)
+    def minimization_utility(self, topic: np.ndarray, *args) -> float:
+        return -1 * self.utility(topic, *args)

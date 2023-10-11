@@ -59,7 +59,7 @@ class ContentMarket:
         consumer_stats = { consumer.index: { "following_rates": [consumer.get_following_rate_vector()], "utilities": [0], "rate_change": [] } for consumer in self.consumers }
         influencer_stats = { influencer.index: { "following_rates": [influencer.get_following_rate_vector()], "utilities": [0], "rate_change": [] } for influencer in self.influencers }
         producer_stats = { producer.index: { "topics": [producer.main_interest], "utilities": [0], "topic_change": [] } for producer in self.producers }
-        total_stats = { "consumer_utilities": [0], "influencer_utilities": [0], "producer_utilities": [0] }
+        total_stats = { "consumer_utilities": [0], "influencer_utilities": [0], "producer_utilities": [0], "social_welfare": [0]}
         average_stats = { "consumer_utilities": [0], "influencer_utilities": [0], "producer_utilities": [0], "consumer_rate_change": [], "influencer_rate_change": [], "producer_topic_change": [] }
         
         for i in range(max_iterations):
@@ -67,6 +67,7 @@ class ContentMarket:
             total_stats["consumer_utilities"].append(0)
             total_stats["influencer_utilities"].append(0)
             total_stats["producer_utilities"].append(0)
+            total_stats["social_welfare"].append(0)
 
             if self.num_consumers > 0:
                 for consumer in self.consumers:
@@ -91,6 +92,7 @@ class ContentMarket:
                     consumer_stats[consumer.index]["rate_change"].append(rate_change)
                     consumer_stats[consumer.index]["utilities"].append(-result.fun)
                     total_stats["consumer_utilities"][-1] += -result.fun
+                    total_stats["social_welfare"][-1] += -result.fun
                 average_stats["consumer_utilities"].append(total_stats["consumer_utilities"][-1] / self.num_consumers)
                 average_stats["consumer_rate_change"].append(np.mean([consumer_stats[consumer.index]["rate_change"][-1] for consumer in self.consumers]))
 
@@ -119,6 +121,7 @@ class ContentMarket:
                     influencer_stats[influencer.index]["rate_change"].append(rate_change)
                     influencer_stats[influencer.index]["utilities"].append(-result.fun)
                     total_stats["influencer_utilities"][-1] += -result.fun
+                    total_stats["social_welfare"][-1] += -result.fun
                 average_stats["influencer_utilities"].append(total_stats["influencer_utilities"][-1] / self.num_influencers)
                 average_stats["influencer_rate_change"].append(np.mean([influencer_stats[influencer.index]["rate_change"][-1] for influencer in self.influencers]))
 
@@ -127,7 +130,7 @@ class ContentMarket:
                 for producer in self.producers:
 
                     result = minimize(
-                        fun=Producer.minimization_utility,
+                        fun=producer.minimization_utility,
                         x0=producer_topics[producer.index],
                         args=(producer, production_rate),
                         bounds=self.topics_bounds,
@@ -144,12 +147,14 @@ class ContentMarket:
                     producer_stats[producer.index]["topic_change"].append(topic_change)
                     producer_stats[producer.index]["utilities"].append(-result.fun)
                     total_stats["producer_utilities"][-1] += -result.fun
+                    total_stats["social_welfare"][-1] += -result.fun
                 average_stats["producer_utilities"].append(total_stats["producer_utilities"][-1] / self.num_producers)
                 average_stats["producer_topic_change"].append(np.mean([producer_stats[producer.index]["topic_change"][-1] for producer in self.producers]))
 
             producer_topics = [producer.sample_topic() for producer in self.producers]
 
             print(f"Iteration {i} / {max_iterations} done.")
+            print(f"Total Social Welfare: {total_stats['social_welfare'][-1]}")
 
             # check for convergence
             # we've converged if the following rates and topics don't change anymore
