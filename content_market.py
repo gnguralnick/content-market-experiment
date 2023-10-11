@@ -77,6 +77,7 @@ class ContentMarket:
                         x0=consumer.get_following_rate_vector(),
                         args=(consumer, producer_topics, production_rate, external_production_rate),
                         constraints=attention_constraint,
+                        bounds=[(0, None) for _ in range(self.num_producers + self.num_influencers)] + [(0, consumer.attention_bound)]
                     )
 
                     if not result.success:
@@ -104,6 +105,7 @@ class ContentMarket:
                         x0=influencer.get_following_rate_vector(),
                         args=(influencer, production_rate, producer_topics),
                         constraints=attention_constraint,
+                        bounds=[(0, None) for _ in range(self.num_producers)]
                     )
 
                     if not result.success:

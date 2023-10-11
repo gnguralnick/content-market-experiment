@@ -33,7 +33,7 @@ class Influencer:
     
     @producer_following_rates.setter
     def producer_following_rates(self, value):
-        if sum(value.values()) > self.attention_bound:
+        if sum(value.values()) -  self.attention_bound > 1e-6:
             raise ValueError("Sum of following rates exceeds attention bound.")
         self._producer_following_rates = value
 
@@ -45,7 +45,7 @@ class Influencer:
             raise ValueError("Following rate vector has wrong length.")
         if sum(following_rate_vector) - self.attention_bound > 1e-6:
             raise ValueError("Sum of following rates exceeds attention bound.")
-        self.producer_following_rates = {i: following_rate_vector[i] for i in range(self.market.num_producers)}
+        self._producer_following_rates = {i: following_rate_vector[i] for i in range(self.market.num_producers)}
 
     @staticmethod
     def utility(following_rate_vector: np.ndarray, *args) -> float:

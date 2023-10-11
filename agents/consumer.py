@@ -30,12 +30,14 @@ class Consumer:
 
         cur_sum = 0
         for i in range(market.num_producers):
-            self._producer_following_rates[i] = np.random.uniform(0, self.attention_bound - cur_sum)
+            self._producer_following_rates[i] = np.random.uniform(0, self.attention_bound - cur_sum) / 2
             cur_sum += self._producer_following_rates[i]
 
         for i in range(market.num_influencers):
-            self._influencer_following_rates[i] = np.random.uniform(0, self.attention_bound - cur_sum)
+            self._influencer_following_rates[i] = np.random.uniform(0, self.attention_bound - cur_sum) / 2
             cur_sum += self._influencer_following_rates[i]
+        
+        self._external_following_rate = np.random.uniform(0, self.attention_bound - cur_sum)
 
     def consumption_topic_interest(self, topic: np.ndarray) -> float:
         if not self.market.check_topic(topic):
