@@ -24,6 +24,18 @@ class Producer:
         distance = np.linalg.norm(topic - self.main_interest)
         return self._topic_interest_function(distance)
     
+    def sample_topic(self) -> np.ndarray:
+        topic = self.main_interest + np.random.normal(0, 1, self.market.topics_dim)
+
+        # clamp topic to be in the market
+        lower_bounds = [bound[0] for bound in self.market.topics_bounds]
+        upper_bounds = [bound[1] for bound in self.market.topics_bounds]
+        topic = np.maximum(topic, lower_bounds)
+        topic = np.minimum(topic, upper_bounds)
+
+        return topic
+
+    
     @staticmethod
     def utility(topic: np.ndarray, *args) -> float:
         producer = cast(Producer, args[0])

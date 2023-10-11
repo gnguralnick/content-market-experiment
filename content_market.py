@@ -54,7 +54,7 @@ class ContentMarket:
         Optimize the market. This is done by iteratively optimizing the utility functions of the producers, consumers, and influencers.
         """
 
-        producer_topics = [self.sample_topic() for producer in self.producers]
+        producer_topics = [producer.sample_topic() for producer in self.producers]
 
         consumer_stats = { consumer.index: { "following_rates": [consumer.get_following_rate_vector()], "utilities": [0], "rate_change": [] } for consumer in self.consumers }
         influencer_stats = { influencer.index: { "following_rates": [influencer.get_following_rate_vector()], "utilities": [0], "rate_change": [] } for influencer in self.influencers }
@@ -145,7 +145,7 @@ class ContentMarket:
                 average_stats["producer_utilities"].append(total_stats["producer_utilities"][-1] / self.num_producers)
                 average_stats["producer_topic_change"].append(np.mean([producer_stats[producer.index]["topic_change"][-1] for producer in self.producers]))
 
-            producer_topics = [self.sample_topic() for producer in self.producers]
+            producer_topics = [producer.sample_topic() for producer in self.producers]
 
             print(f"Iteration {i} / {max_iterations} done.")
 
