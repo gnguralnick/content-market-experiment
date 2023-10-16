@@ -54,13 +54,45 @@ class ContentMarket:
         Optimize the market. This is done by iteratively optimizing the utility functions of the producers, consumers, and influencers.
         """
 
-        producer_topics = [producer.sample_topic() for producer in self.producers]
-
-        consumer_stats = { consumer.index: { "following_rates": [consumer.get_following_rate_vector()], "utilities": [0], "rate_change": [] } for consumer in self.consumers }
-        influencer_stats = { influencer.index: { "following_rates": [influencer.get_following_rate_vector()], "utilities": [0], "rate_change": [] } for influencer in self.influencers }
-        producer_stats = { producer.index: { "topics": [producer.main_interest], "utilities": [0], "topic_change": [] } for producer in self.producers }
-        total_stats = { "consumer_utilities": [0], "influencer_utilities": [0], "producer_utilities": [0], "social_welfare": [0]}
-        average_stats = { "consumer_utilities": [0], "influencer_utilities": [0], "producer_utilities": [0], "consumer_rate_change": [], "influencer_rate_change": [], "producer_topic_change": [] }
+        consumer_stats = { 
+            consumer.index: { 
+                "following_rates": [consumer.get_following_rate_vector()], 
+                "utilities": [0], 
+                "rate_change": [0], 
+                "attention_used": [sum(consumer.get_following_rate_vector())] 
+            } for consumer in self.consumers 
+        }
+        influencer_stats = { 
+            influencer.index: { 
+                "following_rates": [influencer.get_following_rate_vector()], 
+                "utilities": [0], 
+                "rate_change": [0], 
+                "attention_used": [sum(influencer.get_following_rate_vector())] 
+            } for influencer in self.influencers 
+        }
+        producer_stats = { 
+            producer.index: { 
+                "topics": [producer.main_interest], 
+                "utilities": [0], 
+                "topic_change": [0] 
+            } for producer in self.producers 
+        }
+        total_stats = { 
+            "consumer_utilities": [0], 
+            "influencer_utilities": [0], 
+            "producer_utilities": [0], 
+            "social_welfare": [0]
+        }
+        average_stats = { 
+            "consumer_utilities": [0], 
+            "influencer_utilities": [0], 
+            "producer_utilities": [0], 
+            "consumer_rate_change": [0], 
+            "influencer_rate_change": [0], 
+            "producer_topic_change": [0], 
+            "consumer_attention_used": [sum(sum(consumer.get_following_rate_vector()) for consumer in self.consumers) / self.num_consumers] if self.num_consumers > 0 else [0],
+            "influencer_attention_used": [sum(sum(influencer.get_following_rate_vector()) for influencer in self.influencers) / self.num_influencers] if self.num_influencers > 0 else [0],
+        }
         
         for i in range(max_iterations):
             # optimize consumers
@@ -76,7 +108,7 @@ class ContentMarket:
                     result = minimize(
                         fun=Consumer.minimization_utility,
                         x0=consumer.get_following_rate_vector(),
-                        args=(consumer, producer_topics, production_rate, external_production_rate),
+                        args=(consumer, production_rate, external_production_rate),
                         constraints=attention_constraint,
                         bounds=[(0, None) for _ in range(self.num_producers + self.num_influencers)] + [(0, consumer.attention_bound)]
                     )
@@ -91,10 +123,12 @@ class ContentMarket:
                     consumer_stats[consumer.index]["following_rates"].append(result.x)
                     consumer_stats[consumer.index]["rate_change"].append(rate_change)
                     consumer_stats[consumer.index]["utilities"].append(-result.fun)
+                    consumer_stats[consumer.index]["attention_used"].append(sum(result.x))
                     total_stats["consumer_utilities"][-1] += -result.fun
                     total_stats["social_welfare"][-1] += -result.fun
                 average_stats["consumer_utilities"].append(total_stats["consumer_utilities"][-1] / self.num_consumers)
                 average_stats["consumer_rate_change"].append(np.mean([consumer_stats[consumer.index]["rate_change"][-1] for consumer in self.consumers]))
+                average_stats["consumer_attention_used"].append(np.mean([consumer_stats[consumer.index]["attention_used"][-1] for consumer in self.consumers]))
 
 
             if self.num_influencers > 0:
@@ -105,7 +139,7 @@ class ContentMarket:
                     result = minimize(
                         fun=Influencer.minimization_utility,
                         x0=influencer.get_following_rate_vector(),
-                        args=(influencer, production_rate, producer_topics),
+                        args=(influencer, production_rate),
                         constraints=attention_constraint,
                         bounds=[(0, None) for _ in range(self.num_producers)]
                     )
@@ -120,10 +154,12 @@ class ContentMarket:
                     influencer_stats[influencer.index]["following_rates"].append(result.x)
                     influencer_stats[influencer.index]["rate_change"].append(rate_change)
                     influencer_stats[influencer.index]["utilities"].append(-result.fun)
+                    influencer_stats[influencer.index]["attention_used"].append(sum(result.x))
                     total_stats["influencer_utilities"][-1] += -result.fun
                     total_stats["social_welfare"][-1] += -result.fun
                 average_stats["influencer_utilities"].append(total_stats["influencer_utilities"][-1] / self.num_influencers)
                 average_stats["influencer_rate_change"].append(np.mean([influencer_stats[influencer.index]["rate_change"][-1] for influencer in self.influencers]))
+                average_stats["influencer_attention_used"].append(np.mean([influencer_stats[influencer.index]["attention_used"][-1] for influencer in self.influencers]))
 
             if self.num_producers > 0:
                 # optimize producers
@@ -131,7 +167,7 @@ class ContentMarket:
 
                     result = minimize(
                         fun=producer.minimization_utility,
-                        x0=producer_topics[producer.index],
+                        x0=producer.topic_produced,
                         args=(producer, production_rate),
                         bounds=self.topics_bounds,
                     )
@@ -139,7 +175,7 @@ class ContentMarket:
                     if not result.success:
                         raise RuntimeError("Optimization failed", result)
 
-                    producer.main_interest = result.x
+                    producer.topic_produced = result.x
 
                     topic_change = np.linalg.norm(result.x - producer_stats[producer.index]["topics"][-1])
 
@@ -150,8 +186,6 @@ class ContentMarket:
                     total_stats["social_welfare"][-1] += -result.fun
                 average_stats["producer_utilities"].append(total_stats["producer_utilities"][-1] / self.num_producers)
                 average_stats["producer_topic_change"].append(np.mean([producer_stats[producer.index]["topic_change"][-1] for producer in self.producers]))
-
-            producer_topics = [producer.sample_topic() for producer in self.producers]
 
             print(f"Iteration {i} / {max_iterations} done.")
             print(f"Total Social Welfare: {total_stats['social_welfare'][-1]}")

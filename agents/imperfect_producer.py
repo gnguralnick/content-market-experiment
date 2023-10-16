@@ -18,6 +18,7 @@ class ImperfectInformationProducer(Producer):
 
         influencer_reward = 0
         for influencer in producer.market.influencers:
+            # todo: recalculate influencer following rates
             influencer_reward += np.exp(-influencer.delay_sensitivity * (1 / influencer.producer_following_rates[producer.index]))
         
         return influencer_reward

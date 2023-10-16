@@ -20,12 +20,17 @@ class Influencer:
         if not market.check_topic(self.main_interest):
             raise ValueError("Main interest is not in the market.")
         
-        # self._producer_following_rates = {i: 0 for i in range(market.num_producers)}
+        self._producer_following_rates = {i: 0 for i in range(market.num_producers)}
 
         cur_sum = 0
         for i in range(market.num_producers):
             self._producer_following_rates[i] = np.random.uniform(0, self.attention_bound - cur_sum)
             cur_sum += self._producer_following_rates[i]
+
+        # num_follows = self.market.num_producers
+        # rate_per_follow = self.attention_bound / num_follows
+
+        # self._producer_following_rates = {i: rate_per_follow for i in range(market.num_producers)}
 
     @property
     def producer_following_rates(self) -> dict[int, float]:
@@ -53,15 +58,12 @@ class Influencer:
         if influencer.market is None:
             raise ValueError("Influencer has no market.")
         production_rate = cast(float, args[1])
-        topics = cast(list[np.ndarray], args[2])
-
-        if len(topics) != influencer.market.num_producers:
-            raise ValueError("Number of topics does not match number of producers.")
         
         influencer.set_following_rate_vector(following_rate_vector)
         
         reward = 0
         for consumer in influencer.market.consumers:
+            #print(consumer.influencer_following_rates)
             for producer in influencer.market.producers:
                 if not consumer.influencer_following_rates[influencer.index] > 0:
                     continue
@@ -70,7 +72,7 @@ class Influencer:
                 if consumer == producer:
                     continue
 
-                consumer_interest = producer.topic_probability(topics[producer.index]) * consumer.consumption_topic_interest(topics[producer.index])
+                consumer_interest = producer.topic_probability(producer.topic_produced) * consumer.consumption_topic_interest(producer.topic_produced)
                 delay = np.exp(-influencer.delay_sensitivity * (1 / influencer.producer_following_rates[producer.index] + 1 / consumer.influencer_following_rates[influencer.index]))
 
                 reward += production_rate * consumer_interest * delay

@@ -39,6 +39,13 @@ class Consumer:
         
         self._external_following_rate = np.random.uniform(0, self.attention_bound - cur_sum)
 
+        # num_follows = self.market.num_producers + self.market.num_influencers + 1
+        # rate_per_follow = self.attention_bound / num_follows
+
+        # self._producer_following_rates = {i: rate_per_follow for i in range(market.num_producers)}
+        # self._influencer_following_rates = {i: rate_per_follow for i in range(market.num_influencers)}
+        # self._external_following_rate = rate_per_follow
+
     def consumption_topic_interest(self, topic: np.ndarray) -> float:
         if not self.market.check_topic(topic):
             raise ValueError("Topic is not in the market.")
@@ -51,7 +58,7 @@ class Consumer:
     
     @producer_following_rates.setter
     def producer_following_rates(self, value):
-        if sum(value.values()) + sum(self._influencer_following_rates.values()) + self._external_following_rate > self.attention_bound:
+        if sum(value.values()) + sum(self._influencer_following_rates.values()) + self._external_following_rate - self.attention_bound > 1e-6:
             raise ValueError("Sum of following rates exceeds attention bound.")
         self._producer_following_rates = value
 
@@ -92,12 +99,8 @@ class Consumer:
         consumer: Consumer = cast(Consumer, args[0])
         if consumer.market is None:
             raise ValueError("Consumer has no market.")
-        topics: list[np.ndarray] = cast(list[np.ndarray], args[1])
-        production_rate: float = cast(float, args[2])
-        external_production_rate: float = cast(float, args[3])
-
-        if len(topics) != consumer.market.num_producers:
-            raise ValueError("Number of topics does not match number of producers.")
+        production_rate: float = cast(float, args[1])
+        external_production_rate: float = cast(float, args[2])
         
         consumer.set_following_rate_vector(following_rate_vector)
         
@@ -112,7 +115,7 @@ class Consumer:
                 if consumer == producer:
                     continue
 
-                topic_reward = producer.topic_probability(topics[producer.index]) * consumer.consumption_topic_interest(topics[producer.index])
+                topic_reward = producer.topic_probability(producer.topic_produced) * consumer.consumption_topic_interest(producer.topic_produced)
                 delay = np.exp(-consumer.delay_sensitivity * (1 / influencer.producer_following_rates[producer.index] + 1 / consumer.influencer_following_rates[influencer.index]))
 
                 influencer_reward += production_rate * topic_reward * delay
@@ -125,7 +128,7 @@ class Consumer:
             if consumer == producer:
                 continue
 
-            topic_reward = producer.topic_probability(topics[producer.index]) * consumer.consumption_topic_interest(topics[producer.index])
+            topic_reward = producer.topic_probability(producer.topic_produced) * consumer.consumption_topic_interest(producer.topic_produced)
             delay = np.exp(-consumer.delay_sensitivity * (1 / consumer.producer_following_rates[producer.index]))
             direct_following_reward += production_rate * topic_reward * delay
 
