@@ -24,7 +24,10 @@ class Influencer:
 
         cur_sum = 0
         for i in range(market.num_producers):
-            self._producer_following_rates[i] = np.random.uniform(0, self.attention_bound - cur_sum)
+            if self.market.producers[i] == self:
+                self._producer_following_rates[i] = 0
+            else:
+                self._producer_following_rates[i] = np.random.uniform(0, self.attention_bound - cur_sum)
             cur_sum += self._producer_following_rates[i]
 
         # num_follows = self.market.num_producers
@@ -61,13 +64,17 @@ class Influencer:
         
         reward = 0
         for consumer in self.market.consumers:
-            #print(consumer.influencer_following_rates)
+            if not consumer.influencer_following_rates[self.index] > 0:
+                continue
+            if consumer == self:
+                continue
             for producer in self.market.producers:
-                if not consumer.influencer_following_rates[self.index] > 0:
-                    continue
+                
                 if not self.producer_following_rates[producer.index] > 0:
                     continue
                 if consumer == producer:
+                    continue
+                if producer == self:
                     continue
 
                 consumer_interest = producer.topic_probability(producer.topic_produced) * consumer.consumption_topic_interest(producer.topic_produced)

@@ -10,7 +10,7 @@ class ContentMarket:
     The set of topics in the market is a rectangle in topics_bounds.shape[0] dimensions.
     """
 
-    def __init__(self, topics_bounds: np.ndarray, num_producers, num_consumers, num_influencers):
+    def __init__(self, topics_bounds: np.ndarray, num_producers: int, num_consumers: int, num_influencers: int):
         self.topics_bounds = topics_bounds
         self.topics_dim = topics_bounds.shape[0]
         self.producers: list[Producer] = []
@@ -24,19 +24,24 @@ class ContentMarket:
         if len(self.consumers) >= self.num_consumers:
             raise ValueError("Number of consumers exceeds limit.")
         self.consumers.append(consumer)
-        consumer.set_market(self)
 
     def add_producer(self, producer: Producer):
         if len(self.producers) >= self.num_producers:
             raise ValueError("Number of producers exceeds limit.")
         self.producers.append(producer)
-        producer.set_market(self)
 
     def add_influencer(self, influencer: Influencer):
         if len(self.influencers) >= self.num_influencers:
             raise ValueError("Number of influencers exceeds limit.")
         self.influencers.append(influencer)
-        influencer.set_market(self)
+
+    def finalize(self):
+        for consumer in self.consumers:
+            consumer.set_market(self)
+        for producer in self.producers:
+            producer.set_market(self)
+        for influencer in self.influencers:
+            influencer.set_market(self)
 
     def check_topic(self, topic: np.ndarray):
         if topic.shape != (self.topics_dim,):
@@ -53,6 +58,7 @@ class ContentMarket:
         """
         Optimize the market. This is done by iteratively optimizing the utility functions of the producers, consumers, and influencers.
         """
+        self.finalize()
 
         consumer_stats = { 
             consumer.index: { 

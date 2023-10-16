@@ -32,9 +32,11 @@ class Producer:
         
         influencer_reward = 0
         for influencer in self.market.influencers:
+            if not influencer.producer_following_rates[self.index] > 0:
+                continue
+            if influencer == self:
+                continue
             for consumer in self.market.consumers:
-                if not influencer.producer_following_rates[self.index] > 0:
-                    continue
                 if not consumer.influencer_following_rates[influencer.index] > 0:
                     continue
                 if consumer == self:
