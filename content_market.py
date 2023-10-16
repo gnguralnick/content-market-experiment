@@ -106,9 +106,9 @@ class ContentMarket:
                     attention_constraint = LinearConstraint(np.ones(self.num_producers + self.num_influencers + 1), lb=0, ub=consumer.attention_bound)
 
                     result = minimize(
-                        fun=Consumer.minimization_utility,
+                        fun=consumer.minimization_utility,
                         x0=consumer.get_following_rate_vector(),
-                        args=(consumer, production_rate, external_production_rate),
+                        args=(production_rate, external_production_rate),
                         constraints=attention_constraint,
                         bounds=[(0, None) for _ in range(self.num_producers + self.num_influencers)] + [(0, consumer.attention_bound)]
                     )
@@ -137,9 +137,9 @@ class ContentMarket:
                     attention_constraint = LinearConstraint(np.ones(self.num_producers), lb=0, ub=influencer.attention_bound)
 
                     result = minimize(
-                        fun=Influencer.minimization_utility,
+                        fun=influencer.minimization_utility,
                         x0=influencer.get_following_rate_vector(),
-                        args=(influencer, production_rate),
+                        args=(production_rate),
                         constraints=attention_constraint,
                         bounds=[(0, None) for _ in range(self.num_producers)]
                     )
@@ -168,7 +168,7 @@ class ContentMarket:
                     result = minimize(
                         fun=producer.minimization_utility,
                         x0=producer.topic_produced,
-                        args=(producer, production_rate),
+                        args=(production_rate),
                         bounds=self.topics_bounds,
                     )
 

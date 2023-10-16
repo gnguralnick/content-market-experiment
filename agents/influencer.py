@@ -52,33 +52,30 @@ class Influencer:
             raise ValueError("Sum of following rates exceeds attention bound.")
         self._producer_following_rates = {i: following_rate_vector[i] for i in range(self.market.num_producers)}
 
-    @staticmethod
-    def utility(following_rate_vector: np.ndarray, *args) -> float:
-        influencer = cast(Influencer, args[0])
-        if influencer.market is None:
+    def utility(self, following_rate_vector: np.ndarray, *args) -> float:
+        if self.market is None:
             raise ValueError("Influencer has no market.")
-        production_rate = cast(float, args[1])
+        production_rate = cast(float, args[0])
         
-        influencer.set_following_rate_vector(following_rate_vector)
+        self.set_following_rate_vector(following_rate_vector)
         
         reward = 0
-        for consumer in influencer.market.consumers:
+        for consumer in self.market.consumers:
             #print(consumer.influencer_following_rates)
-            for producer in influencer.market.producers:
-                if not consumer.influencer_following_rates[influencer.index] > 0:
+            for producer in self.market.producers:
+                if not consumer.influencer_following_rates[self.index] > 0:
                     continue
-                if not influencer.producer_following_rates[producer.index] > 0:
+                if not self.producer_following_rates[producer.index] > 0:
                     continue
                 if consumer == producer:
                     continue
 
                 consumer_interest = producer.topic_probability(producer.topic_produced) * consumer.consumption_topic_interest(producer.topic_produced)
-                delay = np.exp(-influencer.delay_sensitivity * (1 / influencer.producer_following_rates[producer.index] + 1 / consumer.influencer_following_rates[influencer.index]))
+                delay = np.exp(-self.delay_sensitivity * (1 / self.producer_following_rates[producer.index] + 1 / consumer.influencer_following_rates[self.index]))
 
                 reward += production_rate * consumer_interest * delay
 
         return reward
 
-    @staticmethod
-    def minimization_utility(following_rate_vector: np.ndarray, *args) -> float:
-        return -1 * Influencer.utility(following_rate_vector, *args)
+    def minimization_utility(self, following_rate_vector: np.ndarray, *args) -> float:
+        return -1 * self.utility(following_rate_vector, *args)
