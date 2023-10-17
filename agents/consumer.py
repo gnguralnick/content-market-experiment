@@ -32,6 +32,9 @@ class Consumer(Agent):
         
         self._following_rates['external'] = np.random.uniform(0, self.attention_bound - cur_sum)
 
+    def reset(self):
+        return super().reset()
+
     def consumption_topic_interest(self, topic: np.ndarray) -> float:
         if not self.market.check_topic(topic):
             raise ValueError("Topic is not in the market.")

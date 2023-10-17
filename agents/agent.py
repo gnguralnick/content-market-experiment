@@ -25,6 +25,13 @@ class Agent(ABC):
         self._following_rates = {agent.index: 0 for agent in self.market.agents}
         self._following_rates['external'] = 0
 
+    @abstractmethod
+    def reset(self):
+        """
+        Reset the agent to its initial state.
+        """
+        self.init_following_rates()
+
     def consumption_topic_interest(self, topic: np.ndarray) -> float:
         """
         Return the interest in a topic for consumption.

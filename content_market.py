@@ -49,7 +49,7 @@ class ContentMarket:
 
     def finalize(self):
         for agent in self.agents:
-            agent.init_following_rates()
+            agent.reset()
 
     def check_topic(self, topic: np.ndarray):
         if topic.shape != (self.topics_dim,):

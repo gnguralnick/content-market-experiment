@@ -13,6 +13,9 @@ class Producer(Agent):
         self.topic_produced = main_interest
         self._topic_interest_function = topic_interest_function
 
+    def reset(self):
+        self.topic_produced = self.main_interest
+
     def topic_probability(self, topic: np.ndarray) -> float:
         if not self.market.check_topic(topic):
             raise ValueError("Topic is not in the market.")

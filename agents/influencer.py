@@ -24,6 +24,9 @@ class Influencer(Agent):
             self._following_rates[agent.index] = np.random.uniform(0, self.attention_bound - cur_sum)
             cur_sum += self._following_rates[agent.index]
 
+    def reset(self):
+        return super().reset()
+
     def utility(self, x: np.ndarray, *args) -> float:
         if self.market is None or self.index is None:
             raise ValueError("Influencer has no market.")
