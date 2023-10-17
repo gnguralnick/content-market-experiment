@@ -8,8 +8,8 @@ import numpy as np
 
 class Influencer(Agent):
 
-    def __init__(self, main_interest: np.ndarray, attention_bound, delay_sensitivity):
-        super().__init__(main_interest)
+    def __init__(self, attention_bound, delay_sensitivity):
+        super().__init__()
         
         self.attention_bound = attention_bound
         self.delay_sensitivity = delay_sensitivity

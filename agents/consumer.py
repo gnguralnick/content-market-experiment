@@ -8,8 +8,9 @@ if TYPE_CHECKING:
 
 
 class Consumer(Agent):
-    def __init__(self, main_interest: np.ndarray, topic_interest_function: Callable[[float], float], attention_bound, external_interest_prob, delay_sensitivity):
-        super().__init__(main_interest)
+    def __init__(self, topic_interest_function: Callable[[float], float], attention_bound, external_interest_prob, delay_sensitivity):
+        super().__init__()
+        self.main_interest = None
 
         self._producer_following_rates = dict()
         self._influencer_following_rates = dict()
@@ -32,6 +33,9 @@ class Consumer(Agent):
         
         self._following_rates['external'] = np.random.uniform(0, self.attention_bound - cur_sum)
 
+    def set_main_interest(self, main_interest: np.ndarray):
+        self.main_interest = main_interest
+    
     def reset(self):
         return super().reset()
 

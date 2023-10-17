@@ -7,11 +7,15 @@ import numpy as np
 
 class Producer(Agent):
 
-    def __init__(self, main_interest: np.ndarray, topic_interest_function):
-        super().__init__(main_interest)
+    def __init__(self, topic_interest_function):
+        super().__init__()
 
-        self.topic_produced = main_interest
+        self.main_interest = None
+        self.topic_produced = None
         self._topic_interest_function = topic_interest_function
+
+    def set_main_interest(self, main_interest: np.ndarray):
+        self.main_interest = main_interest
 
     def reset(self):
         self.topic_produced = self.main_interest

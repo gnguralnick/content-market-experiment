@@ -46,8 +46,82 @@ class ContentMarket:
     @property
     def influencers(self) -> list[Influencer]:
         return [agent for agent in self.agents if isinstance(agent, Influencer)]
+    
+    def finalize(self, method="random"):
+        """
+        Finalize the market. This is done by setting the main interests of the producers and consumers.
 
-    def finalize(self):
+        method: The method to use for setting the main interests. Can be "random" or "even".
+        """
+        if all(producer.main_interest is not None for producer in self.producers) and all(consumer.main_interest is not None for consumer in self.consumers):
+            return
+        if method == "random":
+            self.rand_topics()
+        elif method == "even":
+            self.even_topics()
+        else:
+            raise ValueError("Unknown method.")
+    
+    def rand_topics(self):
+        for agent in self.agents:
+            if isinstance(agent, Producer) or isinstance(agent, Consumer):
+                agent.set_main_interest(self.sample_topic())
+
+    def even_topics(self):
+        num_producers = self.num_producers
+        num_consumers = self.num_consumers
+        overlap = set(agent for agent in self.agents if isinstance(agent, Producer) and isinstance(agent, Consumer))
+        num_overlap = len(overlap)
+
+        print(num_overlap)
+
+        topic_min = self.topics_bounds[:, 0]
+        topic_max = self.topics_bounds[:, 1]
+
+        producer_dist = list(tuple(topic) for topic in np.linspace(topic_min, topic_max, num_producers))
+        consumer_dist = list(tuple(topic) for topic in np.linspace(topic_min, topic_max, num_consumers))
+        print(producer_dist, consumer_dist)
+
+        # find the num_overlap pairs of values in producer_dist and consumer_dist that are closest to each other
+        pairs = [(i, j) for i in producer_dist for j in consumer_dist]
+        pairs.sort(key=lambda pair: np.linalg.norm(np.array(pair[0]) - np.array(pair[1])))
+        print(pairs)
+
+        used_producers = set()
+        used_consumers = set()
+
+        closest_pairs = []
+        while len(closest_pairs) < num_overlap:
+            pair = pairs.pop(0)
+            if pair[0] in used_producers or pair[1] in used_consumers:
+                continue
+            closest_pairs.append(pair)
+            used_producers.add(pair[0])
+            used_consumers.add(pair[1])
+        producer_dist = [producer for producer in producer_dist if producer not in used_producers]
+        consumer_dist = [consumer for consumer in consumer_dist if consumer not in used_consumers]
+
+        print(producer_dist, consumer_dist, closest_pairs)
+
+        # now we set the pure producers and consumers to have interests from producer_dist and consumer_dist, respectively
+        # but the overlapping ones should have interests that are the averages of elements in closest_pairs
+        for producer in self.producers:
+            if producer in overlap:
+                continue
+            producer.set_main_interest(np.array(producer_dist.pop()))
+        for consumer in self.consumers:
+            if consumer in overlap:
+                continue
+            consumer.set_main_interest(np.array(consumer_dist.pop()))
+        for agent in overlap:
+            pair = closest_pairs.pop()
+            topic = np.mean(pair, axis=0)
+            agent.set_main_interest(np.array(topic))
+
+    def reset(self):
+        """
+        Reset the market to its initial state.
+        """
         for agent in self.agents:
             agent.reset()
 
@@ -59,14 +133,17 @@ class ContentMarket:
         return True
         
     def sample_topic(self):
-        # generate a random topic t in the market
+        """
+        Generate a random topic in the market.
+        """
         return np.array([np.random.uniform(self.topics_bounds[i, 0], self.topics_bounds[i, 1]) for i in range(self.topics_dim)])
-        
+
     def optimize(self, production_rate, external_production_rate, max_iterations=100):
         """
         Optimize the market. This is done by iteratively optimizing the utility functions of the producers, consumers, and influencers.
         """
         self.finalize()
+        self.reset()
 
         consumer_stats = { 
             consumer.index: { 

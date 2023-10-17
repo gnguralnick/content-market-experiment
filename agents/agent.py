@@ -5,17 +5,14 @@ if TYPE_CHECKING:
     from content_market import ContentMarket
 
 class Agent(ABC):
-    def __init__(self, main_interest: np.ndarray):
+    def __init__(self):
         self.market = None
-        self.main_interest = main_interest
         self.index = None
         self._following_rates = dict()
 
     def set_market(self, market: 'ContentMarket', index: int):
         self.market = market
         self.index = index
-        if not market.check_topic(self.main_interest):
-            raise ValueError("Main interest is not in the market.")
 
     def init_following_rates(self):
         """
