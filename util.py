@@ -10,3 +10,9 @@ def inverse_decay(x: float, a: float = 1, pow: int = 1) -> float:
 
 def tanh_decay(x: float, a: float = 1) -> float:
     return 1 - np.tanh(a * x)
+
+from enum import Enum
+class OptimizationTargets(Enum):
+    CONSUMER = 1
+    PRODUCER = 2
+    INFLUENCER = 3

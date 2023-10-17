@@ -1,8 +1,10 @@
 import numpy as np
 
-from agents import Consumer, Producer, Influencer
+from agents import Consumer, Producer, Influencer, Agent
 
 from scipy.optimize import minimize, LinearConstraint
+
+from util import OptimizationTargets
 
 class ContentMarket:
     """
@@ -10,38 +12,44 @@ class ContentMarket:
     The set of topics in the market is a rectangle in topics_bounds.shape[0] dimensions.
     """
 
-    def __init__(self, topics_bounds: np.ndarray, num_producers: int, num_consumers: int, num_influencers: int):
+    def __init__(self, topics_bounds: np.ndarray):
         self.topics_bounds = topics_bounds
         self.topics_dim = topics_bounds.shape[0]
-        self.producers: list[Producer] = []
-        self.consumers: list[Consumer] = []
-        self.influencers: list[Influencer] = []
-        self.num_producers = num_producers
-        self.num_consumers = num_consumers
-        self.num_influencers = num_influencers
+        self.agents: list[Agent] = []
+        self.num_producers = 0
+        self.num_consumers = 0
+        self.num_influencers = 0
+        self.num_agents = 0
 
-    def add_consumer(self, consumer: Consumer):
-        if len(self.consumers) >= self.num_consumers:
-            raise ValueError("Number of consumers exceeds limit.")
-        self.consumers.append(consumer)
-
-    def add_producer(self, producer: Producer):
-        if len(self.producers) >= self.num_producers:
-            raise ValueError("Number of producers exceeds limit.")
-        self.producers.append(producer)
-
-    def add_influencer(self, influencer: Influencer):
-        if len(self.influencers) >= self.num_influencers:
-            raise ValueError("Number of influencers exceeds limit.")
-        self.influencers.append(influencer)
+    def add_agent(self, agent: Agent):
+        self.agents.append(agent)
+        self.num_agents += 1
+        if isinstance(agent, Producer):
+            self.num_producers += 1
+        elif isinstance(agent, Consumer):
+            self.num_consumers += 1
+        elif isinstance(agent, Influencer):
+            self.num_influencers += 1
+        else:
+            raise ValueError("Unknown agent type.")
+        
+        agent.set_market(self, len(self.agents) - 1)
+        
+    @property
+    def producers(self) -> list[Producer]:
+        return [agent for agent in self.agents if isinstance(agent, Producer)]
+    
+    @property
+    def consumers(self) -> list[Consumer]:
+        return [agent for agent in self.agents if isinstance(agent, Consumer)]
+    
+    @property
+    def influencers(self) -> list[Influencer]:
+        return [agent for agent in self.agents if isinstance(agent, Influencer)]
 
     def finalize(self):
-        for consumer in self.consumers:
-            consumer.set_market(self)
-        for producer in self.producers:
-            producer.set_market(self)
-        for influencer in self.influencers:
-            influencer.set_market(self)
+        for agent in self.agents:
+            agent.init_following_rates()
 
     def check_topic(self, topic: np.ndarray):
         if topic.shape != (self.topics_dim,):
@@ -109,14 +117,22 @@ class ContentMarket:
 
             if self.num_consumers > 0:
                 for consumer in self.consumers:
-                    attention_constraint = LinearConstraint(np.ones(self.num_producers + self.num_influencers + 1), lb=0, ub=consumer.attention_bound)
+                    attention_constraint = LinearConstraint(np.ones(self.num_agents + 1), lb=0, ub=consumer.attention_bound)
+                    
+                    bounds = []
+                    for agent in self.agents:
+                        if agent == consumer or (not isinstance(agent, Producer) and not isinstance(agent, Influencer)):
+                            bounds.append((0, 0))
+                        else:
+                            bounds.append((0, None))
+                    bounds.append((0, None)) # external
 
                     result = minimize(
                         fun=consumer.minimization_utility,
                         x0=consumer.get_following_rate_vector(),
-                        args=(production_rate, external_production_rate),
+                        args=(production_rate, external_production_rate, OptimizationTargets.CONSUMER),
                         constraints=attention_constraint,
-                        bounds=[(0, None) for _ in range(self.num_producers + self.num_influencers)] + [(0, consumer.attention_bound)]
+                        bounds=bounds
                     )
 
                     if not result.success:
@@ -140,14 +156,22 @@ class ContentMarket:
             if self.num_influencers > 0:
                 # optimize influencers
                 for influencer in self.influencers:
-                    attention_constraint = LinearConstraint(np.ones(self.num_producers), lb=0, ub=influencer.attention_bound)
+                    attention_constraint = LinearConstraint(np.ones(self.num_agents + 1), lb=0, ub=influencer.attention_bound)
+
+                    bounds = []
+                    for agent in self.agents:
+                        if agent == influencer or (not isinstance(agent, Producer) and not isinstance(agent, Influencer)):
+                            bounds.append((0, 0))
+                        else:
+                            bounds.append((0, None))
+                    bounds.append((influencer.get_following_rate_vector()[-1], influencer.get_following_rate_vector()[-1])) # external should not change when optimizing influencer
 
                     result = minimize(
                         fun=influencer.minimization_utility,
                         x0=influencer.get_following_rate_vector(),
-                        args=(production_rate),
+                        args=(production_rate, external_production_rate, OptimizationTargets.INFLUENCER),
                         constraints=attention_constraint,
-                        bounds=[(0, None) for _ in range(self.num_producers)]
+                        bounds=bounds
                     )
 
                     if not result.success:
@@ -174,7 +198,7 @@ class ContentMarket:
                     result = minimize(
                         fun=producer.minimization_utility,
                         x0=producer.topic_produced,
-                        args=(production_rate),
+                        args=(production_rate, external_production_rate, OptimizationTargets.PRODUCER),
                         bounds=self.topics_bounds,
                     )
 
