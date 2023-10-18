@@ -179,3 +179,29 @@ def plot_follows_by_iteration(agents: list[Producer | Influencer], followers: li
         ax.sharex(fig.axes[0])
         ax.label_outer()
     plt.show()
+
+def plot_ending_value_by_test(title, stats, tests, xlabel, ylabel):
+    plt.figure()
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if isinstance(stats[0], list):
+        ending_values = [stats[i][-1] for i in range(len(stats))]
+    else:
+        ending_values = stats
+    plt.plot(tests, ending_values)
+    
+    plt.xlim(min(tests), max(tests))
+    #plt.xticks(tests)
+    plt.show()
+
+def plot_value_by_iteration_by_test(title, stats, tests, varied_name, ylabel):
+    plt.figure()
+    plt.title(title)
+    plt.xlabel('Iteration')
+    plt.ylabel(ylabel)
+    for i in range(len(stats)):
+        plt.plot(stats[i], label=f"{varied_name} = {tests[i]}")
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.xticks(range(len(stats[0])))
+    plt.show()

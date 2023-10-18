@@ -158,7 +158,8 @@ class ContentMarket:
         average_stats = { 
             "consumer_utilities": [0], 
             "influencer_utilities": [0], 
-            "producer_utilities": [0], 
+            "producer_utilities": [0],
+            "agent_utilities": [0],
             "consumer_rate_change": [0], 
             "influencer_rate_change": [0], 
             "producer_topic_change": [0], 
@@ -269,6 +270,7 @@ class ContentMarket:
 
             print(f"Iteration {i} / {max_iterations} done.")
             print(f"Total Social Welfare: {total_stats['social_welfare'][-1]}")
+            average_stats["agent_utilities"].append(total_stats["social_welfare"][-1] / self.num_agents)
 
             # check for convergence
             # we've converged if the following rates and topics don't change anymore
