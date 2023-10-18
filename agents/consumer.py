@@ -38,7 +38,6 @@ class Consumer(Agent):
             self._following_rates['external'] = np.random.uniform(0, self.attention_bound - cur_sum)
         elif self.init_following_rates_method == 'equal':
             num_producers_or_influencers = len(set(self.market.producers + self.market.influencers) - {self})
-            print(num_producers_or_influencers)
             for agent in self.market.agents:
                 if agent == self or (not isinstance(agent, Producer) and not isinstance(agent, Influencer)):
                     # only producers and influencers can be followed
@@ -83,10 +82,7 @@ class Consumer(Agent):
         production_rate: float = cast(float, args[0])
         external_production_rate: float = cast(float, args[1])
 
-        prev_follows = self.get_following_rate_vector()
         following_rate_vector = x
-        
-        self.set_following_rate_vector(following_rate_vector)
         
         influencer_reward = 0
         for influencer in self.market.influencers:
@@ -95,32 +91,31 @@ class Consumer(Agent):
             for producer in self.market.producers:
                 if not influencer.following_rates[producer.index] > 0:
                     continue
-                if not self.following_rates[influencer.index] > 0:
+                if not following_rate_vector[influencer.index] > 0:
                     continue
 
                 if self == producer:
                     continue
 
                 topic_reward = producer.topic_probability(producer.topic_produced) * self.consumption_topic_interest(producer.topic_produced)
-                delay = np.exp(-self.delay_sensitivity * (1 / influencer.following_rates[producer.index] + 1 / self.following_rates[influencer.index]))
+                delay = np.exp(-self.delay_sensitivity * (1 / influencer.following_rates[producer.index] + 1 / following_rate_vector[influencer.index]))
 
                 influencer_reward += production_rate * topic_reward * delay
         
         direct_following_reward = 0
         for producer in self.market.producers:
-            if not self.following_rates[producer.index] > 0:
+            if not following_rate_vector[producer.index] > 0:
                 continue
 
             if self == producer:
                 continue
 
             topic_reward = producer.topic_probability(producer.topic_produced) * self.consumption_topic_interest(producer.topic_produced)
-            delay = np.exp(-self.delay_sensitivity * (1 / self.following_rates[producer.index]))
+            delay = np.exp(-self.delay_sensitivity * (1 / following_rate_vector[producer.index]))
             direct_following_reward += production_rate * topic_reward * delay
 
         external_reward = 0
-        if self.following_rates['external'] > 0:
-            external_reward = external_production_rate * self.external_interest_prob * np.exp(-self.delay_sensitivity * (1 / self.following_rates['external']))
+        if following_rate_vector[-1] > 0:
+            external_reward = external_production_rate * self.external_interest_prob * np.exp(-self.delay_sensitivity * (1 / following_rate_vector[-1]))
 
-        self.set_following_rate_vector(prev_follows)
         return influencer_reward + direct_following_reward + external_reward

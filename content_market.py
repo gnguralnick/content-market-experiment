@@ -73,19 +73,15 @@ class ContentMarket:
         overlap = set(agent for agent in self.agents if isinstance(agent, Producer) and isinstance(agent, Consumer))
         num_overlap = len(overlap)
 
-        print(num_overlap)
-
         topic_min = self.topics_bounds[:, 0]
         topic_max = self.topics_bounds[:, 1]
 
         producer_dist = list(tuple(topic) for topic in np.linspace(topic_min, topic_max, num_producers))
         consumer_dist = list(tuple(topic) for topic in np.linspace(topic_min, topic_max, num_consumers))
-        print(producer_dist, consumer_dist)
 
         # find the num_overlap pairs of values in producer_dist and consumer_dist that are closest to each other
         pairs = [(i, j) for i in producer_dist for j in consumer_dist]
         pairs.sort(key=lambda pair: np.linalg.norm(np.array(pair[0]) - np.array(pair[1])))
-        print(pairs)
 
         used_producers = set()
         used_consumers = set()
@@ -100,8 +96,6 @@ class ContentMarket:
             used_consumers.add(pair[1])
         producer_dist = [producer for producer in producer_dist if producer not in used_producers]
         consumer_dist = [consumer for consumer in consumer_dist if consumer not in used_consumers]
-
-        print(producer_dist, consumer_dist, closest_pairs)
 
         # now we set the pure producers and consumers to have interests from producer_dist and consumer_dist, respectively
         # but the overlapping ones should have interests that are the averages of elements in closest_pairs
@@ -183,12 +177,15 @@ class ContentMarket:
                 for consumer in self.consumers:
                     attention_constraint = LinearConstraint(np.ones(self.num_agents + 1), lb=0, ub=consumer.attention_bound)
 
+                    print(f"Optimizing consumer {consumer.index}")
                     result = minimize(
                         fun=consumer.minimization_utility,
                         x0=consumer.get_following_rate_vector(),
                         args=(production_rate, external_production_rate, OptimizationTargets.CONSUMER),
                         constraints=attention_constraint,
-                        bounds=consumer.get_following_rate_bounds()
+                        bounds=consumer.get_following_rate_bounds(),
+                        options={'maxiter': 1000},
+                        tol=1e-10
                     )
 
                     if not result.success:
@@ -214,12 +211,15 @@ class ContentMarket:
                 for influencer in self.influencers:
                     attention_constraint = LinearConstraint(np.ones(self.num_agents + 1), lb=0, ub=influencer.attention_bound)
 
+                    print(f"Optimizing influencer {influencer.index}")
                     result = minimize(
                         fun=influencer.minimization_utility,
                         x0=influencer.get_following_rate_vector(),
                         args=(production_rate, external_production_rate, OptimizationTargets.INFLUENCER),
                         constraints=attention_constraint,
-                        bounds=influencer.get_following_rate_bounds()
+                        bounds=influencer.get_following_rate_bounds(),
+                        options={'maxiter': 1000},
+                        tol=1e-10
                     )
 
                     if not result.success:
@@ -242,12 +242,14 @@ class ContentMarket:
             if self.num_producers > 0:
                 # optimize producers
                 for producer in self.producers:
-
+                    print(f"Optimizing producer {producer.index}")
                     result = minimize(
                         fun=producer.minimization_utility,
                         x0=producer.topic_produced,
                         args=(production_rate, external_production_rate, OptimizationTargets.PRODUCER),
                         bounds=self.topics_bounds,
+                        options={'maxiter': 1000,'maxls': 1000},
+                        tol=1e-10
                     )
 
                     if not result.success:

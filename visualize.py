@@ -16,6 +16,8 @@ def get_agent_title(agent: Agent):
         return "Influencer {}".format(agent.index)
 
 def plot_topic_distribution_histogram(title, agents: list[Consumer | Producer], min_topic, max_topic, bins=50):
+    if len(agents) == 0:
+        return
     plt.figure()
     plt.title(title)
     plt.xlabel('Topic')
@@ -26,6 +28,8 @@ def plot_topic_distribution_histogram(title, agents: list[Consumer | Producer], 
     plt.show()
 
 def plot_consumer_topic_interest_distributions(title, agents: list[Consumer], min_topic, max_topic, agent_colors):
+    if len(agents) == 0:
+        return
     plt.figure()
     plt.title(title)
     topics_dist = np.linspace(min_topic, max_topic, 100)
@@ -36,6 +40,8 @@ def plot_consumer_topic_interest_distributions(title, agents: list[Consumer], mi
     plt.show()
 
 def plot_producer_topic_probability_distributions(title, agents: list[Producer], min_topic, max_topic, agent_colors):
+    if len(agents) == 0:
+        return
     plt.figure()
     plt.title(title)
     topics_dist = np.linspace(min_topic, max_topic, 100)
@@ -46,6 +52,8 @@ def plot_producer_topic_probability_distributions(title, agents: list[Producer],
     plt.show()
 
 def plot_agent_utility_by_iteration(title, agents: list[Agent], agent_colors, agent_stats, averages=None):
+    if len(agents) == 0:
+        return
     plt.figure()
     plt.title(title)
     if averages:
@@ -57,6 +65,8 @@ def plot_agent_utility_by_iteration(title, agents: list[Agent], agent_colors, ag
     plt.show()
 
 def plot_agent_attention_used_by_iteration(title, agents: list[Consumer | Influencer], agent_colors, agent_stats, averages=None):
+    if len(agents) == 0:
+        return
     plt.figure()
     plt.title(title)
     if averages:
@@ -69,6 +79,8 @@ def plot_agent_attention_used_by_iteration(title, agents: list[Consumer | Influe
     plt.show()
 
 def plot_producer_topic_produced_by_iteration(title, producers: list[Producer], consumers: list[Consumer], agent_colors, agent_stats):
+    if len(producers) == 0:
+        return
     plt.figure()
     plt.title(title)
     for producer in producers:
@@ -81,6 +93,8 @@ def plot_producer_topic_produced_by_iteration(title, producers: list[Producer], 
     plt.show()
 
 def plot_agent_following_rate_change_by_iteration(title, agents: list[Consumer | Influencer], agent_colors, agent_stats, averages=None):
+    if len(agents) == 0:
+        return
     plt.figure()
     plt.title(title)
     if averages:
@@ -92,6 +106,8 @@ def plot_agent_following_rate_change_by_iteration(title, agents: list[Consumer |
     plt.show()
 
 def plot_producer_topic_change_by_iteration(title, producers: list[Producer], agent_colors, agent_stats, averages=None):
+    if len(producers) == 0:
+        return
     plt.figure()
     plt.title(title)
     if averages:
@@ -110,6 +126,8 @@ def plot_total_social_welfare_by_iteration(title, totals):
     plt.show()
 
 def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consumer], producers: list[Producer], agent_colors, agent_stats):
+    if len(consumers) == 0 or len(producers) == 0:
+        return
     plt.figure()
     plt.title(title)
     plt.xlabel('Main interest closeness')
@@ -126,6 +144,8 @@ def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consum
     plt.show()
 
 def plot_following_rates_by_iteration(agents: list[Consumer | Influencer], follows: list[Producer | Influencer], agent_colors, agent_stats):
+    if len(agents) == 0 or len(follows) == 0:
+        return
     fig = plt.figure(figsize=(5, 5 * len(agents)))
     for i, agent in enumerate(agents):
         ax = fig.add_subplot(len(agents), 1, i + 1)
@@ -142,14 +162,20 @@ def plot_following_rates_by_iteration(agents: list[Consumer | Influencer], follo
         ax.label_outer()
     plt.show()
 
-def plot_follows_by_iteration(agent: Producer | Influencer, followers: list[Consumer | Influencer], agent_colors, agent_stats):
-    plt.figure()
-    plt.title(f"{get_agent_title(agent)} followers by Iteration")
-    for follower in followers:
-        if follower == agent:
-            continue
-        following_rate_by_iteration = [vec[agent.index] for vec in agent_stats[follower.index]['following_rates']]
-        plt.plot(following_rate_by_iteration, label=get_agent_title(follower), color=agent_colors[follower.index])
-    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    plt.xticks(range(len(following_rate_by_iteration)))
+def plot_follows_by_iteration(agents: list[Producer | Influencer], followers: list[Consumer | Influencer], agent_colors, agent_stats):
+    if len(agents) == 0 or len(followers) == 0:
+        return
+    fig = plt.figure(figsize=(5, 5 * len(agents)))
+    for i, agent in enumerate(agents):
+        ax = fig.add_subplot(len(agents), 1, i + 1)
+        ax.set_title(f"{get_agent_title(agent)} followers by Iteration")
+        for follower in followers:
+            if follower == agent:
+                continue
+            following_rate_by_iteration = [vec[agent.index] for vec in agent_stats[follower.index]['following_rates']]
+            ax.plot(following_rate_by_iteration, label=get_agent_title(follower), color=agent_colors[follower.index])
+        ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        ax.set_xticks(range(len(following_rate_by_iteration)))
+        ax.sharex(fig.axes[0])
+        ax.label_outer()
     plt.show()

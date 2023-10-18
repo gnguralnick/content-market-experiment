@@ -56,9 +56,7 @@ class Influencer(Agent):
             raise ValueError("Influencer has no market.")
         production_rate = cast(float, args[0])
 
-        prev_follows = self.get_following_rate_vector()
         following_rate_vector = x
-        self.set_following_rate_vector(following_rate_vector)
         
         reward = 0
         for consumer in self.market.consumers:
@@ -68,7 +66,7 @@ class Influencer(Agent):
                 continue
             for producer in self.market.producers:
                 
-                if not self.following_rates[producer.index] > 0:
+                if not following_rate_vector[producer.index] > 0:
                     continue
                 if consumer == producer:
                     continue
@@ -76,11 +74,9 @@ class Influencer(Agent):
                     continue
 
                 consumer_interest = producer.topic_probability(producer.topic_produced) * consumer.consumption_topic_interest(producer.topic_produced)
-                delay = np.exp(-self.delay_sensitivity * (1 / self.following_rates[producer.index] + 1 / consumer.following_rates[self.index]))
+                delay = np.exp(-self.delay_sensitivity * (1 / following_rate_vector[producer.index] + 1 / consumer.following_rates[self.index]))
 
                 reward += production_rate * consumer_interest * delay
-
-        self.set_following_rate_vector(prev_follows)
         return reward
 
     def minimization_utility(self, following_rate_vector: np.ndarray, *args) -> float:
