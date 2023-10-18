@@ -117,7 +117,7 @@ def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consum
     for consumer in consumers:
         interest_closeness = []
         following_rate = []
-        for producer in producers:
+        for producer in sorted(producers, key=lambda p: np.linalg.norm(consumer.main_interest - p.main_interest)):
             ending_rate = agent_stats[consumer.index]['following_rates'][-1][producer.index]
             interest_closeness.append(np.linalg.norm(consumer.main_interest - producer.main_interest))
             following_rate.append(ending_rate)
@@ -126,15 +126,31 @@ def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consum
     plt.show()
 
 def plot_following_rates_by_iteration(agents: list[Consumer | Influencer], follows: list[Producer | Influencer], agent_colors, agent_stats):
-    fig = plt.figure(figsize=(5, 20))
+    fig = plt.figure(figsize=(5, 5 * len(agents)))
+    max_following_rate = max(max(vec) for agent in agents for vec in agent_stats[agent.index]['following_rates'])
+    min_following_rate = min(min(vec) for agent in agents for vec in agent_stats[agent.index]['following_rates'])
     for i, agent in enumerate(agents):
         ax = fig.add_subplot(len(agents), 1, i + 1)
         ax.set_title(f"Following rates by Iteration for {get_agent_title(agent)}")
         for other in follows:
             rate_by_iteration = [vec[other.index] for vec in agent_stats[agent.index]['following_rates']]
             ax.plot(rate_by_iteration, label=get_agent_title(other), color=agent_colors[other.index])
+        if isinstance(agent, Consumer):
+            rate_by_iteration = [vec[-1] for vec in agent_stats[agent.index]['following_rates']]
+            ax.plot(rate_by_iteration, label='External', color='black')
         ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         ax.set_xticks(range(len(rate_by_iteration)))
         ax.sharex(fig.axes[0])
         ax.label_outer()
+        ax.set_ylim(min_following_rate - 1, max_following_rate + 1)
+    plt.show()
+
+def plot_follows_by_iteration(agent: Producer | Influencer, followers: list[Consumer | Influencer], agent_colors, agent_stats):
+    plt.figure()
+    plt.title(f"{get_agent_title(agent)} followers by Iteration")
+    for follower in followers:
+        following_rate_by_iteration = [vec[agent.index] for vec in agent_stats[follower.index]['following_rates']]
+        plt.plot(following_rate_by_iteration, label=get_agent_title(follower), color=agent_colors[follower.index])
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.xticks(range(len(following_rate_by_iteration)))
     plt.show()

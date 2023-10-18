@@ -43,7 +43,7 @@ class Influencer(Agent):
     def get_following_rate_bounds(self):
         curr_rates = self.get_following_rate_vector()
         bounds = []
-        for agent in self.agents:
+        for agent in self.market.agents:
             if agent == self or not isinstance(agent, Producer):
                 bounds.append((curr_rates[agent.index], curr_rates[agent.index]))
             else:
