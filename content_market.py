@@ -145,28 +145,15 @@ class ContentMarket:
         self.finalize()
         self.reset()
 
-        consumer_stats = { 
-            consumer.index: { 
-                "following_rates": [consumer.get_following_rate_vector()], 
-                "utilities": [0], 
-                "rate_change": [0], 
-                "attention_used": [sum(consumer.get_following_rate_vector())] 
-            } for consumer in self.consumers 
-        }
-        influencer_stats = { 
-            influencer.index: { 
-                "following_rates": [influencer.get_following_rate_vector()], 
-                "utilities": [0], 
-                "rate_change": [0], 
-                "attention_used": [sum(influencer.get_following_rate_vector())] 
-            } for influencer in self.influencers 
-        }
-        producer_stats = { 
-            producer.index: { 
-                "topics": [producer.main_interest], 
-                "utilities": [0], 
-                "topic_change": [0] 
-            } for producer in self.producers 
+        agent_stats = {
+            agent.index: {
+                "following_rates": [agent.get_following_rate_vector()] if isinstance(agent, Consumer) or isinstance(agent, Influencer) else None,
+                "topics": [agent.main_interest] if isinstance(agent, Producer) else None,
+                "utilities": [0],
+                "rate_change": [0] if isinstance(agent, Consumer) or isinstance(agent, Influencer) else None,
+                "topic_change": [0] if isinstance(agent, Producer) else None,
+                "attention_used": [sum(agent.get_following_rate_vector())] if isinstance(agent, Consumer) or isinstance(agent, Influencer) else None
+            } for agent in self.agents
         }
         total_stats = { 
             "consumer_utilities": [0], 
@@ -195,21 +182,13 @@ class ContentMarket:
             if self.num_consumers > 0:
                 for consumer in self.consumers:
                     attention_constraint = LinearConstraint(np.ones(self.num_agents + 1), lb=0, ub=consumer.attention_bound)
-                    
-                    bounds = []
-                    for agent in self.agents:
-                        if agent == consumer or (not isinstance(agent, Producer) and not isinstance(agent, Influencer)):
-                            bounds.append((0, 0))
-                        else:
-                            bounds.append((0, None))
-                    bounds.append((0, None)) # external
 
                     result = minimize(
                         fun=consumer.minimization_utility,
                         x0=consumer.get_following_rate_vector(),
                         args=(production_rate, external_production_rate, OptimizationTargets.CONSUMER),
                         constraints=attention_constraint,
-                        bounds=bounds
+                        bounds=consumer.get_following_rate_bounds()
                     )
 
                     if not result.success:
@@ -217,17 +196,17 @@ class ContentMarket:
 
                     consumer.set_following_rate_vector(result.x)
 
-                    rate_change = np.linalg.norm(result.x - consumer_stats[consumer.index]["following_rates"][-1])
+                    rate_change = np.linalg.norm(result.x - agent_stats[consumer.index]["following_rates"][-1])
 
-                    consumer_stats[consumer.index]["following_rates"].append(result.x)
-                    consumer_stats[consumer.index]["rate_change"].append(rate_change)
-                    consumer_stats[consumer.index]["utilities"].append(-result.fun)
-                    consumer_stats[consumer.index]["attention_used"].append(sum(result.x))
+                    agent_stats[consumer.index]["following_rates"].append(result.x)
+                    agent_stats[consumer.index]["rate_change"].append(rate_change)
+                    agent_stats[consumer.index]["utilities"].append(-result.fun)
+                    agent_stats[consumer.index]["attention_used"].append(sum(result.x))
                     total_stats["consumer_utilities"][-1] += -result.fun
                     total_stats["social_welfare"][-1] += -result.fun
                 average_stats["consumer_utilities"].append(total_stats["consumer_utilities"][-1] / self.num_consumers)
-                average_stats["consumer_rate_change"].append(np.mean([consumer_stats[consumer.index]["rate_change"][-1] for consumer in self.consumers]))
-                average_stats["consumer_attention_used"].append(np.mean([consumer_stats[consumer.index]["attention_used"][-1] for consumer in self.consumers]))
+                average_stats["consumer_rate_change"].append(np.mean([agent_stats[consumer.index]["rate_change"][-1] for consumer in self.consumers]))
+                average_stats["consumer_attention_used"].append(np.mean([agent_stats[consumer.index]["attention_used"][-1] for consumer in self.consumers]))
 
 
             if self.num_influencers > 0:
@@ -235,20 +214,12 @@ class ContentMarket:
                 for influencer in self.influencers:
                     attention_constraint = LinearConstraint(np.ones(self.num_agents + 1), lb=0, ub=influencer.attention_bound)
 
-                    bounds = []
-                    for agent in self.agents:
-                        if agent == influencer or (not isinstance(agent, Producer) and not isinstance(agent, Influencer)):
-                            bounds.append((0, 0))
-                        else:
-                            bounds.append((0, None))
-                    bounds.append((influencer.get_following_rate_vector()[-1], influencer.get_following_rate_vector()[-1])) # external should not change when optimizing influencer
-
                     result = minimize(
                         fun=influencer.minimization_utility,
                         x0=influencer.get_following_rate_vector(),
                         args=(production_rate, external_production_rate, OptimizationTargets.INFLUENCER),
                         constraints=attention_constraint,
-                        bounds=bounds
+                        bounds=influencer.get_following_rate_bounds()
                     )
 
                     if not result.success:
@@ -256,17 +227,17 @@ class ContentMarket:
 
                     influencer.set_following_rate_vector(result.x)
 
-                    rate_change = np.linalg.norm(result.x - influencer_stats[influencer.index]["following_rates"][-1])
+                    rate_change = np.linalg.norm(result.x - agent_stats[influencer.index]["following_rates"][-1])
 
-                    influencer_stats[influencer.index]["following_rates"].append(result.x)
-                    influencer_stats[influencer.index]["rate_change"].append(rate_change)
-                    influencer_stats[influencer.index]["utilities"].append(-result.fun)
-                    influencer_stats[influencer.index]["attention_used"].append(sum(result.x))
+                    agent_stats[influencer.index]["following_rates"].append(result.x)
+                    agent_stats[influencer.index]["rate_change"].append(rate_change)
+                    agent_stats[influencer.index]["utilities"].append(-result.fun)
+                    agent_stats[influencer.index]["attention_used"].append(sum(result.x))
                     total_stats["influencer_utilities"][-1] += -result.fun
                     total_stats["social_welfare"][-1] += -result.fun
                 average_stats["influencer_utilities"].append(total_stats["influencer_utilities"][-1] / self.num_influencers)
-                average_stats["influencer_rate_change"].append(np.mean([influencer_stats[influencer.index]["rate_change"][-1] for influencer in self.influencers]))
-                average_stats["influencer_attention_used"].append(np.mean([influencer_stats[influencer.index]["attention_used"][-1] for influencer in self.influencers]))
+                average_stats["influencer_rate_change"].append(np.mean([agent_stats[influencer.index]["rate_change"][-1] for influencer in self.influencers]))
+                average_stats["influencer_attention_used"].append(np.mean([agent_stats[influencer.index]["attention_used"][-1] for influencer in self.influencers]))
 
             if self.num_producers > 0:
                 # optimize producers
@@ -284,15 +255,15 @@ class ContentMarket:
 
                     producer.topic_produced = result.x
 
-                    topic_change = np.linalg.norm(result.x - producer_stats[producer.index]["topics"][-1])
+                    topic_change = np.linalg.norm(result.x - agent_stats[producer.index]["topics"][-1])
 
-                    producer_stats[producer.index]["topics"].append(result.x)
-                    producer_stats[producer.index]["topic_change"].append(topic_change)
-                    producer_stats[producer.index]["utilities"].append(-result.fun)
+                    agent_stats[producer.index]["topics"].append(result.x)
+                    agent_stats[producer.index]["topic_change"].append(topic_change)
+                    agent_stats[producer.index]["utilities"].append(-result.fun)
                     total_stats["producer_utilities"][-1] += -result.fun
                     total_stats["social_welfare"][-1] += -result.fun
                 average_stats["producer_utilities"].append(total_stats["producer_utilities"][-1] / self.num_producers)
-                average_stats["producer_topic_change"].append(np.mean([producer_stats[producer.index]["topic_change"][-1] for producer in self.producers]))
+                average_stats["producer_topic_change"].append(np.mean([agent_stats[producer.index]["topic_change"][-1] for producer in self.producers]))
 
             print(f"Iteration {i} / {max_iterations} done.")
             print(f"Total Social Welfare: {total_stats['social_welfare'][-1]}")
@@ -332,4 +303,4 @@ class ContentMarket:
                     break
                 
         
-        return consumer_stats, influencer_stats, producer_stats, total_stats, average_stats
+        return agent_stats, total_stats, average_stats

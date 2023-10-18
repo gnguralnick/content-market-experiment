@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 class Consumer(Agent):
-    def __init__(self, topic_interest_function: Callable[[float], float], attention_bound, external_interest_prob, delay_sensitivity):
+    def __init__(self, topic_interest_function: Callable[[float], float], attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method: str = 'random'):
         super().__init__()
         self.main_interest = None
 
@@ -21,17 +21,33 @@ class Consumer(Agent):
         self.external_interest_prob = external_interest_prob
         self.delay_sensitivity = delay_sensitivity
 
+        self.init_following_rates_method = init_following_rates_method
+
     def init_following_rates(self):
         super().init_following_rates()
-        cur_sum = 0
-        for agent in self.market.agents:
-            if agent == self or (not isinstance(agent, Producer) and not isinstance(agent, Influencer)):
-                # only producers and influencers can be followed
-                continue
-            self._following_rates[agent.index] = np.random.uniform(0, self.attention_bound - cur_sum)
-            cur_sum += self._following_rates[agent.index]
-        
-        self._following_rates['external'] = np.random.uniform(0, self.attention_bound - cur_sum)
+        if self.init_following_rates_method == 'random':
+            cur_sum = 0
+            agent_random_sort = np.random.permutation(self.market.agents)
+            for agent in agent_random_sort:
+                if agent == self or (not isinstance(agent, Producer) and not isinstance(agent, Influencer)):
+                    # only producers and influencers can be followed
+                    continue
+                self._following_rates[agent.index] = np.random.uniform(0, self.attention_bound - cur_sum)
+                cur_sum += self._following_rates[agent.index]
+            
+            self._following_rates['external'] = np.random.uniform(0, self.attention_bound - cur_sum)
+        elif self.init_following_rates_method == 'equal':
+            num_producers_or_influencers = len(set(self.market.producers + self.market.influencers) - {self})
+            print(num_producers_or_influencers)
+            for agent in self.market.agents:
+                if agent == self or (not isinstance(agent, Producer) and not isinstance(agent, Influencer)):
+                    # only producers and influencers can be followed
+                    continue
+                self._following_rates[agent.index] = self.attention_bound / (num_producers_or_influencers + 1) # +1 for external
+            
+            self._following_rates['external'] = self.attention_bound / (num_producers_or_influencers + 1)
+        else:
+            raise ValueError("Unknown init_following_rates_method.")
 
     def set_main_interest(self, main_interest: np.ndarray):
         self.main_interest = main_interest
@@ -49,6 +65,17 @@ class Consumer(Agent):
         if sum(value.values()) - self.attention_bound > 1e-6:
             return False
         return True
+    
+    def get_following_rate_bounds(self):
+        curr_rates = self.get_following_rate_vector()
+        bounds = []
+        for agent in self.market.agents:
+            if agent == self or (not isinstance(agent, Producer) and not isinstance(agent, Influencer)):
+                bounds.append((curr_rates[agent.index], curr_rates[agent.index]))
+            else:
+                bounds.append((0, None))
+        bounds.append((0, None)) # external
+        return bounds
 
     def utility(self, x: np.array, *args) -> float:
         if self.market is None or self.index is None:
@@ -56,6 +83,7 @@ class Consumer(Agent):
         production_rate: float = cast(float, args[0])
         external_production_rate: float = cast(float, args[1])
 
+        prev_follows = self.get_following_rate_vector()
         following_rate_vector = x
         
         self.set_following_rate_vector(following_rate_vector)
@@ -94,4 +122,5 @@ class Consumer(Agent):
         if self.following_rates['external'] > 0:
             external_reward = external_production_rate * self.external_interest_prob * np.exp(-self.delay_sensitivity * (1 / self.following_rates['external']))
 
+        self.set_following_rate_vector(prev_follows)
         return influencer_reward + direct_following_reward + external_reward
