@@ -1,7 +1,5 @@
 from typing import cast
 
-from agents.influencer import Influencer
-
 import numpy as np
 from agents.producer import Producer
 
@@ -13,14 +11,8 @@ class ImperfectInformationProducer(Producer):
 
     def __init__(self, topic_interest_function):
         super().__init__(topic_interest_function)
-        self.use_imperfect_information = True
-
-    def toggle_imperfect_information(self):
-        self.use_imperfect_information = not self.use_imperfect_information
 
     def utility(self, topic: np.ndarray, *args) -> float:
-        if not self.use_imperfect_information:
-            return super().utility(topic, *args)
         if self.market is None:
             raise ValueError("Producer has no market.")
         production_rate = cast(float, args[0])
