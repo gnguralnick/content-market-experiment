@@ -10,7 +10,7 @@ from util import OptimizationTargets
 class ImperfectInformationProducer(Producer):
 
     def __init__(self, topic_interest_function):
-        super().__init__(topic_interest_function)
+        Producer.__init__(self, topic_interest_function)
 
     def utility(self, topic: np.ndarray, *args) -> float:
         if self.market is None:

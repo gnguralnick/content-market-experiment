@@ -24,7 +24,7 @@ def plot_topic_distribution_histogram(title, agents: list[Consumer | Producer], 
     plt.ylabel('Frequency')
     plt.hist([agent.main_interest[0] for agent in agents], bins=bins)
     plt.yticks(range(0, len(agents) + 1))
-    plt.xticks(range(min_topic, max_topic + 1))
+    plt.xlim(min_topic, max_topic)
     plt.show()
 
 def plot_consumer_topic_interest_distributions(title, agents: list[Consumer], min_topic, max_topic, agent_colors):
@@ -64,6 +64,19 @@ def plot_agent_utility_by_iteration(title, agents: list[Agent], agent_colors, ag
     plt.xticks(range(0, len(agent_stats[agents[0].index]['utilities'])))
     plt.show()
 
+def plot_agent_utility_change_by_iteration(title, agents: list[Agent], agent_colors, agent_stats, averages=None):
+    if len(agents) == 0:
+        return
+    plt.figure()
+    plt.title(title)
+    if averages:
+        plt.plot(averages, label="Average")
+    for agent in agents:
+        plt.plot(agent_stats[agent.index]['utility_change'], label=get_agent_title(agent), color=agent_colors[agent.index])
+    plt.legend()
+    plt.xticks(range(0, len(agent_stats[agents[0].index]['utility_change'])))
+    plt.show()
+
 def plot_agent_attention_used_by_iteration(title, agents: list[Consumer | Influencer], agent_colors, agent_stats, averages=None):
     if len(agents) == 0:
         return
@@ -88,7 +101,7 @@ def plot_producer_topic_produced_by_iteration(title, producers: list[Producer], 
     for consumer in consumers:
         plt.plot([consumer.main_interest] * len(agent_stats[producer.index]['topics']), label='Consumer {}'.format(consumer.index), linestyle='--', color=agent_colors[consumer.index])
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    plt.ylim(min(min(agent.main_interest for agent in producers), min(agent.main_interest for agent in consumers)) - 1, max(max(agent.main_interest for agent in producers), max(agent.main_interest for agent in consumers)) + 1)
+    plt.ylim(min(min(agent.main_interest for agent in producers), min(agent.main_interest for agent in consumers)) - 0.5, max(max(agent.main_interest for agent in producers), max(agent.main_interest for agent in consumers)) + 0.5)
     plt.xticks(range(len(agent_stats[producers[0].index]['topics'])))
     plt.show()
 
@@ -136,6 +149,8 @@ def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consum
         interest_closeness = []
         following_rate = []
         for producer in sorted(producers, key=lambda p: np.linalg.norm(consumer.main_interest - p.main_interest)):
+            if producer == consumer:
+                continue
             ending_rate = agent_stats[consumer.index]['following_rates'][-1][producer.index]
             interest_closeness.append(np.linalg.norm(consumer.main_interest - producer.main_interest))
             following_rate.append(ending_rate)
@@ -151,6 +166,8 @@ def plot_following_rates_by_iteration(agents: list[Consumer | Influencer], follo
         ax = fig.add_subplot(len(agents), 1, i + 1)
         ax.set_title(f"Following rates by Iteration for {get_agent_title(agent)}")
         for other in follows:
+            if other == agent:
+                continue
             rate_by_iteration = [vec[other.index] for vec in agent_stats[agent.index]['following_rates']]
             ax.plot(rate_by_iteration, label=get_agent_title(other), color=agent_colors[other.index])
         if isinstance(agent, Consumer):

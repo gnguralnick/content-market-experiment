@@ -9,7 +9,7 @@ import numpy as np
 class Influencer(Agent):
 
     def __init__(self, attention_bound, delay_sensitivity, init_following_rates_method: str = 'random'):
-        super().__init__()
+        Agent.__init__(self)
         
         self.attention_bound = attention_bound
         self.delay_sensitivity = delay_sensitivity
@@ -17,7 +17,7 @@ class Influencer(Agent):
         self.init_following_rates_method = init_following_rates_method
 
     def init_following_rates(self):
-        super().init_following_rates()
+        Agent.init_following_rates(self)
         if self.init_following_rates_method == 'random':
             cur_sum = 0
             agent_random_sort = np.random.permutation(self.market.agents)
@@ -38,17 +38,18 @@ class Influencer(Agent):
             raise ValueError("Unknown init_following_rates_method.")
 
     def reset(self):
-        return super().reset()
+        return Agent.reset(self)
     
     def get_following_rate_bounds(self):
-        curr_rates = self.get_following_rate_vector()
         bounds = []
         for agent in self.market.agents:
-            if agent == self or not isinstance(agent, Producer):
-                bounds.append((curr_rates[agent.index], curr_rates[agent.index]))
+            if agent == self:
+                bounds.append((0, 0))
+            elif not isinstance(agent, Producer):
+                bounds.append((self.following_rates[agent.index], self.following_rates[agent.index]))
             else:
                 bounds.append((0, None))
-        bounds.append((curr_rates[-1], curr_rates[-1])) # external should not change when optimizing influencer
+        bounds.append((self.following_rates['external'], self.following_rates['external'])) # external should not change when optimizing influencer
         return bounds
 
     def utility(self, x: np.ndarray, *args) -> float:

@@ -1,5 +1,5 @@
-from consumer import Consumer
-from producer import Producer
+from agents.consumer import Consumer
+from agents.producer import Producer
 import numpy as np
 from util import OptimizationTargets
 
@@ -8,17 +8,17 @@ class ConsumerProducer(Consumer, Producer):
     A consumer-producer is an agent that can consume content and produce content.
     """
     
-    def __init__(self, topic_interest_function):
-        Consumer.__init__(self, topic_interest_function)
+    def __init__(self, topic_interest_function, attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method: str = 'random'):
+        Consumer.__init__(self, topic_interest_function, attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method)
         Producer.__init__(self, topic_interest_function)
     
-    def set_market(self, market):
-        Consumer.set_market(self, market)
-        Producer.set_market(self, market)
+    def set_market(self, market, index):
+        Consumer.set_market(self, market, index)
+        Producer.set_market(self, market, index)
 
     def reset(self):
-        Consumer.reset(self)
         Producer.reset(self)
+        Consumer.reset(self)
 
     def utility(self, x: np.array, *args) -> float:
         optimization_target = args[2]

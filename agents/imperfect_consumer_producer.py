@@ -1,5 +1,5 @@
-from imperfect_producer import ImperfectInformationProducer
-from consumer_producer import ConsumerProducer
+from agents.imperfect_producer import ImperfectInformationProducer
+from agents.consumer_producer import ConsumerProducer
 import numpy as np
 from util import OptimizationTargets
 

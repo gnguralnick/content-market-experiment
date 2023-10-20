@@ -8,7 +8,7 @@ import numpy as np
 class Producer(Agent):
 
     def __init__(self, topic_interest_function):
-        super().__init__()
+        Agent.__init__(self)
 
         self.main_interest = None
         self.topic_produced = None

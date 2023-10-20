@@ -9,11 +9,8 @@ if TYPE_CHECKING:
 
 class Consumer(Agent):
     def __init__(self, topic_interest_function: Callable[[float], float], attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method: str = 'random'):
-        super().__init__()
+        Agent.__init__(self)
         self.main_interest = None
-
-        self._producer_following_rates = dict()
-        self._influencer_following_rates = dict()
 
         self._topic_interest_function = topic_interest_function
         self.attention_bound = attention_bound
@@ -24,7 +21,7 @@ class Consumer(Agent):
         self.init_following_rates_method = init_following_rates_method
 
     def init_following_rates(self):
-        super().init_following_rates()
+        Agent.init_following_rates(self)
         if self.init_following_rates_method == 'random':
             cur_sum = 0
             agent_random_sort = np.random.permutation(self.market.agents)
@@ -52,7 +49,7 @@ class Consumer(Agent):
         self.main_interest = main_interest
     
     def reset(self):
-        return super().reset()
+        return Agent.reset(self)
 
     def consumption_topic_interest(self, topic: np.ndarray) -> float:
         if not self.market.check_topic(topic):
@@ -66,11 +63,12 @@ class Consumer(Agent):
         return True
     
     def get_following_rate_bounds(self):
-        curr_rates = self.get_following_rate_vector()
         bounds = []
         for agent in self.market.agents:
-            if agent == self or (not isinstance(agent, Producer) and not isinstance(agent, Influencer)):
-                bounds.append((curr_rates[agent.index], curr_rates[agent.index]))
+            if agent == self:
+                bounds.append((0, 0))
+            elif not isinstance(agent, Producer) and not isinstance(agent, Influencer):
+                bounds.append((self.following_rates[agent.index], self.following_rates[agent.index]))
             else:
                 bounds.append((0, None))
         bounds.append((0, None)) # external
