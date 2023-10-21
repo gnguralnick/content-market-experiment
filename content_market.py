@@ -190,6 +190,10 @@ class ContentMarket:
             total_stats["producer_utilities"].append(0)
             total_stats["social_welfare"].append(0)
 
+            consumer_updates = {}
+            influencer_updates = {}
+            producer_updates = {}
+
             if self.num_consumers > 0:
                 for consumer in self.consumers:
                     attention_constraint = LinearConstraint(np.ones(self.num_agents + 1), lb=0, ub=consumer.attention_bound)
@@ -209,20 +213,15 @@ class ContentMarket:
                         raise RuntimeError("Optimization failed", result)
 
                     consumer.set_following_rate_vector(result.x)
+                    consumer_updates[consumer.index] = result.x
 
                     rate_change = np.linalg.norm(result.x - consumer_stats[consumer.index]["following_rates"][-1])
 
                     consumer_stats[consumer.index]["following_rates"].append(result.x)
                     consumer_stats[consumer.index]["rate_change"].append(rate_change)
-                    consumer_stats[consumer.index]["utilities"].append(-result.fun)
-                    consumer_stats[consumer.index]["utility_change"].append((-result.fun) - consumer_stats[consumer.index]["utilities"][-2])
                     consumer_stats[consumer.index]["attention_used"].append(sum(result.x))
-                    total_stats["consumer_utilities"][-1] += -result.fun
-                    total_stats["social_welfare"][-1] += -result.fun
-                average_stats["consumer_utilities"].append(total_stats["consumer_utilities"][-1] / self.num_consumers)
                 average_stats["consumer_rate_change"].append(np.mean([consumer_stats[consumer.index]["rate_change"][-1] for consumer in self.consumers]))
                 average_stats["consumer_attention_used"].append(np.mean([consumer_stats[consumer.index]["attention_used"][-1] for consumer in self.consumers]))
-                average_stats["consumer_utility_change"].append(np.mean([consumer_stats[consumer.index]["utility_change"][-1] for consumer in self.consumers]))
 
 
             if self.num_influencers > 0:
@@ -244,21 +243,16 @@ class ContentMarket:
                     if not result.success:
                         raise RuntimeError("Optimization failed", result)
 
-                    influencer.set_following_rate_vector(result.x)
+                    #influencer.set_following_rate_vector(result.x)
+                    influencer_updates[influencer.index] = result.x
 
                     rate_change = np.linalg.norm(result.x - influencer_stats[influencer.index]["following_rates"][-1])
 
                     influencer_stats[influencer.index]["following_rates"].append(result.x)
                     influencer_stats[influencer.index]["rate_change"].append(rate_change)
-                    influencer_stats[influencer.index]["utilities"].append(-result.fun)
-                    influencer_stats[influencer.index]["utility_change"].append((-result.fun) - influencer_stats[influencer.index]["utilities"][-2])
                     influencer_stats[influencer.index]["attention_used"].append(sum(result.x))
-                    total_stats["influencer_utilities"][-1] += -result.fun
-                    total_stats["social_welfare"][-1] += -result.fun
-                average_stats["influencer_utilities"].append(total_stats["influencer_utilities"][-1] / self.num_influencers)
                 average_stats["influencer_rate_change"].append(np.mean([influencer_stats[influencer.index]["rate_change"][-1] for influencer in self.influencers]))
                 average_stats["influencer_attention_used"].append(np.mean([influencer_stats[influencer.index]["attention_used"][-1] for influencer in self.influencers]))
-                average_stats["influencer_utility_change"].append(np.mean([influencer_stats[influencer.index]["utility_change"][-1] for influencer in self.influencers]))
 
             if self.num_producers > 0:
                 # optimize producers
@@ -269,26 +263,52 @@ class ContentMarket:
                         x0=producer.topic_produced,
                         args=(production_rate, external_production_rate, OptimizationTargets.PRODUCER),
                         bounds=self.topics_bounds,
-                        options={'maxiter': 1000,'maxls': 1000},
+                        options={'maxiter': 1000,'maxls': 1000, 'ftol': 1e-10, 'gtol': 1e-10},
                         tol=1e-10
                     )
 
                     if not result.success:
                         raise RuntimeError("Optimization failed", result)
 
-                    producer.topic_produced = result.x
+                    #producer.topic_produced = result.x
+                    producer_updates[producer.index] = result.x
 
                     topic_change = np.linalg.norm(result.x - producer_stats[producer.index]["topics"][-1])
 
                     producer_stats[producer.index]["topics"].append(result.x)
                     producer_stats[producer.index]["topic_change"].append(topic_change)
-                    producer_stats[producer.index]["utilities"].append(-result.fun)
-                    producer_stats[producer.index]["utility_change"].append((-result.fun) - producer_stats[producer.index]["utilities"][-2])
-                    total_stats["producer_utilities"][-1] += -result.fun
-                    total_stats["social_welfare"][-1] += -result.fun
-                average_stats["producer_utilities"].append(total_stats["producer_utilities"][-1] / self.num_producers)
                 average_stats["producer_topic_change"].append(np.mean([producer_stats[producer.index]["topic_change"][-1] for producer in self.producers]))
-                average_stats["producer_utility_change"].append(np.mean([producer_stats[producer.index]["utility_change"][-1] for producer in self.producers]))
+
+            
+
+            # calculate utilities
+            for consumer in self.consumers:
+                consumer.set_following_rate_vector(consumer_updates[consumer.index])
+                utility = consumer.utility(consumer.get_following_rate_vector(), production_rate, external_production_rate)
+                consumer_stats[consumer.index]["utilities"].append(utility)
+                consumer_stats[consumer.index]["utility_change"].append(utility - consumer_stats[consumer.index]["utilities"][-2])
+                total_stats["consumer_utilities"][-1] += utility
+                total_stats["social_welfare"][-1] += utility
+            average_stats["consumer_utilities"].append(total_stats["consumer_utilities"][-1] / self.num_consumers)
+            average_stats["consumer_utility_change"].append(np.mean([consumer_stats[consumer.index]["utility_change"][-1] for consumer in self.consumers]))
+            for influencer in self.influencers:
+                influencer.set_following_rate_vector(influencer_updates[influencer.index])
+                utility = influencer.utility(influencer.get_following_rate_vector(), production_rate, external_production_rate)
+                influencer_stats[influencer.index]["utilities"].append(utility)
+                influencer_stats[influencer.index]["utility_change"].append(utility - influencer_stats[influencer.index]["utilities"][-2])
+                total_stats["influencer_utilities"][-1] += utility
+                total_stats["social_welfare"][-1] += utility
+            average_stats["influencer_utilities"].append(total_stats["influencer_utilities"][-1] / self.num_influencers)
+            average_stats["influencer_utility_change"].append(np.mean([influencer_stats[influencer.index]["utility_change"][-1] for influencer in self.influencers]))
+            for producer in self.producers:
+                producer.topic_produced = producer_updates[producer.index]
+                utility = producer.utility(producer.topic_produced, production_rate, external_production_rate)
+                producer_stats[producer.index]["utilities"].append(utility)
+                producer_stats[producer.index]["utility_change"].append(utility - producer_stats[producer.index]["utilities"][-2])
+                total_stats["producer_utilities"][-1] += utility
+                total_stats["social_welfare"][-1] += utility
+            average_stats["producer_utilities"].append(total_stats["producer_utilities"][-1] / self.num_producers)
+            average_stats["producer_utility_change"].append(np.mean([producer_stats[producer.index]["utility_change"][-1] for producer in self.producers]))
 
             print(f"Iteration {i} / {max_iterations} done.")
             print(f"Total Social Welfare: {total_stats['social_welfare'][-1]}")

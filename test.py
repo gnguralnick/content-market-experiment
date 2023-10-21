@@ -42,6 +42,7 @@ def test(topics: np.ndarray, varied_param: str, num_producers: int | list[int], 
         'average_influencer_utilities': [],
         'average_consumer_utilities': [],
         'num_iterations': [],
+        'average_consumer_following_rate_influencer_proportion': [],
     }
     markets = []
     tests = { varied_param: params[varied_param_index] }
@@ -64,7 +65,7 @@ def test(topics: np.ndarray, varied_param: str, num_producers: int | list[int], 
         # initialize the market
         market.finalize(method=init_interest_method)
         # run the market
-        agent_stats, total_stats, average_stats = market.optimize(production_rate=prod_rate, external_production_rate=ext_prod_rate)
+        consumer_stats, producer_stats, influencer_stats, total_stats, average_stats = market.optimize(production_rate=prod_rate, external_production_rate=ext_prod_rate)
 
         # add the stats to the list
         stats['total_social_welfare'].append(total_stats['social_welfare'])
@@ -73,6 +74,16 @@ def test(topics: np.ndarray, varied_param: str, num_producers: int | list[int], 
         stats['average_influencer_utilities'].append(average_stats['influencer_utilities'])
         stats['average_consumer_utilities'].append(average_stats['consumer_utilities'])
         stats['num_iterations'].append(len(total_stats['social_welfare']))
+
+        # average proportion of consumer attention allocated to influencers
+        influencer_proportion_sum = 0
+        for consumer in market.consumers:
+            for influencer in market.influencers:
+                influencer_proportion_sum += consumer.following_rates[influencer.index] / consumer.attention_bound
+            influencer_proportion_sum /= len(market.influencers)
+        influencer_proportion_sum /= len(market.consumers)
+        stats['average_consumer_following_rate_influencer_proportion'].append(influencer_proportion_sum)
+            
 
     return stats, markets, tests
 
