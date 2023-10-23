@@ -3,9 +3,9 @@ from typing import cast
 import numpy as np
 from agents.producer import Producer
 
-from scipy.optimize import minimize, LinearConstraint
+from scipy.optimize import LinearConstraint
 
-from util import OptimizationTargets
+from util import OptimizationTargets, minimize_with_retry
 
 class ImperfectInformationProducer(Producer):
 
@@ -28,14 +28,14 @@ class ImperfectInformationProducer(Producer):
             attention_constraint = LinearConstraint(np.ones(self.market.num_agents + 1), lb=0, ub=influencer.attention_bound)
             
             print("Optimizing for influencer", influencer.index, "under imperfect producer", self.index)
-            result = minimize(
+            result = minimize_with_retry(
                 fun=influencer.minimization_utility,
                 x0=influencer.get_following_rate_vector(),
                 args=(production_rate, external_production_rate, OptimizationTargets.INFLUENCER),
                 constraints=attention_constraint,
                 bounds=influencer.get_following_rate_bounds(),
-                options={'maxiter': 1000},
-                tol=1e-15,
+                # options={'maxiter': 1000},
+                # tol=1e-15,
             )
 
             if not result.success:
@@ -48,6 +48,8 @@ class ImperfectInformationProducer(Producer):
         influencer_reward = 0
         old_reward = 0
         for influencer in self.market.influencers:
+            if not potential_rates[influencer.index][self.index] > 0:
+                continue
             influencer_reward += np.exp(-influencer.delay_sensitivity * (1 / potential_rates[influencer.index][self.index]))
             old_reward += np.exp(-influencer.delay_sensitivity * (1 / prev_rates[influencer.index][self.index]))
 

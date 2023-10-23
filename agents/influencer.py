@@ -79,6 +79,3 @@ class Influencer(Agent):
 
                 reward += production_rate * consumer_interest * delay
         return reward
-
-    def minimization_utility(self, following_rate_vector: np.ndarray, *args) -> float:
-        return -1 * self.utility(following_rate_vector, *args)
