@@ -8,6 +8,8 @@ from util import OptimizationTargets, minimize_with_retry
 
 from stats import ConsumerStats, ProducerStats, InfluencerStats, TestStats
 
+from timeit import default_timer as timer
+
 class ContentMarket:
     """
     A content market where producers, consumers, and influencers react.
@@ -141,6 +143,8 @@ class ContentMarket:
         self.finalize()
         self.reset()
 
+        start_time = timer()
+
         stats = TestStats(market=self)
         
         for i in range(max_iterations):
@@ -250,7 +254,9 @@ class ContentMarket:
                 else:
                     producer_convergence = True
                 if consumer_convergence and influencer_convergence and producer_convergence:
-                    print("Converged.")
+                    end_time = timer()
+                    stats.finish(end_time - start_time)
+                    print(f"Converged. Optimization took {end_time - start_time} seconds.")
                     break
                 
         return stats

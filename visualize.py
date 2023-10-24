@@ -198,28 +198,33 @@ def plot_follows_by_iteration(agents: list[Producer | Influencer], followers: li
         ax.label_outer()
     plt.show()
 
-def plot_ending_value_by_test(title, stats, tests, xlabel, ylabel):
+def plot_ending_value_by_test(title, stats: list[TestStats], value_name, varied_values, xlabel, ylabel):
     plt.figure()
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    if isinstance(stats[0], list):
-        ending_values = [stats[i][-1] for i in range(len(stats))]
-    else:
-        ending_values = stats
-    plt.plot(tests, ending_values)
-    
-    plt.xlim(min(tests), max(tests))
-    #plt.xticks(tests)
+    ending_values = [getattr(stats[i], value_name)[-1] for i in range(len(stats))]
+    plt.plot(varied_values, ending_values)
+    plt.xlim(min(varied_values), max(varied_values))
     plt.show()
 
-def plot_value_by_iteration_by_test(title, stats, tests, varied_name, ylabel):
+def plot_value_by_test(title, stats: list[TestStats], value_name, varied_values, xlabel, ylabel):
+    plt.figure()
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    values = [getattr(stats[i], value_name) for i in range(len(stats))]
+    plt.plot(varied_values, values)
+    plt.xlim(min(varied_values), max(varied_values))
+    plt.show()
+
+def plot_value_by_iteration_by_test(title, stats: list[TestStats], value_name, varied_name, varied_values, ylabel):
     plt.figure()
     plt.title(title)
     plt.xlabel('Iteration')
     plt.ylabel(ylabel)
     for i in range(len(stats)):
-        plt.plot(stats[i], label=f"{varied_name} = {tests[i]}")
+        plt.plot(getattr(stats[i], value_name), label=f"{varied_name} = {varied_values[i]}")
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xticks(range(len(stats[0])))
     plt.show()
@@ -233,4 +238,17 @@ def plot_producer_topic_distance_from_main_interest_by_iteration(title, producer
         plt.plot(agent_stats[producer.index].topic_distance, label='Producer {}'.format(producer.index), color=agent_colors[producer.index])
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xticks(range(len(agent_stats[producers[0].index].topic_distance)))
+    plt.show()
+
+def plot_follow_proportion_by_iteration(title, consumers: list[Consumer], agent_colors, agent_stats: dict[int, ConsumerStats], agent: str, averages=None):
+    if len(consumers) == 0:
+        return
+    plt.figure()
+    plt.title(title)
+    if averages:
+        plt.plot(averages, label="Average")
+    for consumer in consumers:
+        plt.plot(agent_stats[consumer.index].get_follow_proportion(agent), label='Consumer {}'.format(consumer.index), color=agent_colors[consumer.index])
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.xticks(range(len(agent_stats[consumers[0].index].get_follow_proportion(agent))))
     plt.show()

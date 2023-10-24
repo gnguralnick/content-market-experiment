@@ -8,9 +8,9 @@ class ConsumerProducer(Consumer, Producer):
     A consumer-producer is an agent that can consume content and produce content.
     """
     
-    def __init__(self, topic_interest_function, attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method: str = 'random'):
-        Consumer.__init__(self, topic_interest_function, attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method)
-        Producer.__init__(self, topic_interest_function)
+    def __init__(self, producer_topic_interest_function, consumer_topic_interest_function, attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method: str = 'random'):
+        Consumer.__init__(self, consumer_topic_interest_function, attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method)
+        Producer.__init__(self, producer_topic_interest_function)
     
     def set_market(self, market, index):
         Consumer.set_market(self, market, index)

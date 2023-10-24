@@ -5,9 +5,9 @@ from util import OptimizationTargets
 
 class ImperfectConsumerProducer(ConsumerProducer, ImperfectInformationProducer):
 
-    def __init__(self, topic_interest_function, attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method: str = 'random'):
-        ConsumerProducer.__init__(self, topic_interest_function, attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method)
-        ImperfectInformationProducer.__init__(self, topic_interest_function)
+    def __init__(self, producer_topic_interest_function, consumer_topic_interest_function, attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method: str = 'random'):
+        ConsumerProducer.__init__(self, producer_topic_interest_function, consumer_topic_interest_function, attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method)
+        ImperfectInformationProducer.__init__(self, producer_topic_interest_function)
     
     def utility(self, x: np.array, *args) -> float:
         optimization_target = args[2]
