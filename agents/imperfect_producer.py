@@ -27,7 +27,7 @@ class ImperfectInformationProducer(Producer):
         for influencer in self.market.influencers:
             attention_constraint = LinearConstraint(np.ones(self.market.num_agents + 1), lb=0, ub=influencer.attention_bound)
             
-            print("Optimizing for influencer", influencer.index, "under imperfect producer", self.index)
+            #print("Optimizing for influencer", influencer.index, "under imperfect producer", self.index)
             result = minimize_with_retry(
                 fun=influencer.minimization_utility,
                 x0=influencer.get_following_rate_vector(),
@@ -39,8 +39,7 @@ class ImperfectInformationProducer(Producer):
             )
 
             if not result.success:
-                print(result)
-                raise RuntimeError("Optimization failed", result.message)
+                raise RuntimeError(f"Optimization of influencer {influencer.index} under imperfect producer {self.index} failed", result.message)
     
             
             potential_rates[influencer.index] = result.x
