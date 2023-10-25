@@ -34,8 +34,6 @@ class ImperfectInformationProducer(Producer):
                 args=(production_rate, external_production_rate, OptimizationTargets.INFLUENCER),
                 constraints=attention_constraint,
                 bounds=influencer.get_following_rate_bounds(),
-                # options={'maxiter': 1000},
-                # tol=1e-15,
             )
 
             if not result.success:

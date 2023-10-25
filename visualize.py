@@ -198,23 +198,47 @@ def plot_follows_by_iteration(agents: list[Producer | Influencer], followers: li
         ax.label_outer()
     plt.show()
 
-def plot_ending_value_by_test(title, stats: list[TestStats], value_name, varied_values, xlabel, ylabel):
+def plot_ending_value_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], value_name, varied_values, xlabel, ylabel):
     plt.figure()
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    ending_values = [getattr(stats[i], value_name)[-1] for i in range(len(stats))]
-    plt.plot(varied_values, ending_values)
+    if len(perfect_info_stats) > 0:
+        perfect_ending_values = [getattr(perfect_info_stats[i], value_name)[-1] for i in range(len(perfect_info_stats))]
+        plt.plot(varied_values, perfect_ending_values, label='Perfect Information')
+    if len(imperfect_info_stats) > 0:
+        imperfect_ending_values = [getattr(imperfect_info_stats[i], value_name)[-1] for i in range(len(imperfect_info_stats))]
+        plt.plot(varied_values, imperfect_ending_values, label='Imperfect Information')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xlim(min(varied_values), max(varied_values))
     plt.show()
 
-def plot_value_by_test(title, stats: list[TestStats], value_name, varied_values, xlabel, ylabel):
+def plot_cost_of_influence_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], varied_values, xlabel, ylabel):
     plt.figure()
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-    values = [getattr(stats[i], value_name) for i in range(len(stats))]
-    plt.plot(varied_values, values)
+    cost = []
+    if not len(perfect_info_stats) == len(imperfect_info_stats):
+        raise ValueError("Perfect and imperfect information stats must have the same length.")
+    for i in range(len(perfect_info_stats)):
+        cost.append(perfect_info_stats[i].total_social_welfare[-1] - imperfect_info_stats[i].total_social_welfare[-1])
+    plt.plot(varied_values, cost)
+    plt.xlim(min(varied_values), max(varied_values))
+    plt.show()
+
+def plot_value_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], value_name, varied_values, xlabel, ylabel):
+    plt.figure()
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if len(perfect_info_stats) > 0:
+        perfect_values = [getattr(perfect_info_stats[i], value_name) for i in range(len(perfect_info_stats))]
+        plt.plot(varied_values, perfect_values, label='Perfect Information')
+    if len(imperfect_info_stats) > 0:
+        imperfect_values = [getattr(imperfect_info_stats[i], value_name) for i in range(len(imperfect_info_stats))]
+        plt.plot(varied_values, imperfect_values, label='Imperfect Information')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xlim(min(varied_values), max(varied_values))
     plt.show()
 
@@ -226,14 +250,16 @@ def plot_value_by_iteration_by_test(title, stats: list[TestStats], value_name, v
     for i in range(len(stats)):
         plt.plot(getattr(stats[i], value_name), label=f"{varied_name} = {varied_values[i]}")
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    plt.xticks(range(len(stats[0])))
+    plt.xticks(range(max(test.num_iterations for test in stats)))
     plt.show()
 
-def plot_producer_topic_distance_from_main_interest_by_iteration(title, producers: list[Producer], agent_colors, agent_stats: dict[int, ProducerStats]):
+def plot_producer_topic_distance_from_main_interest_by_iteration(title, producers: list[Producer], agent_colors, agent_stats: dict[int, ProducerStats], averages=None):
     if len(producers) == 0:
         return
     plt.figure()
     plt.title(title)
+    if averages:
+        plt.plot(averages, label="Average")
     for producer in producers:
         plt.plot(agent_stats[producer.index].topic_distance, label='Producer {}'.format(producer.index), color=agent_colors[producer.index])
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
@@ -251,4 +277,17 @@ def plot_follow_proportion_by_iteration(title, consumers: list[Consumer], agent_
         plt.plot(agent_stats[consumer.index].get_follow_proportion(agent), label='Consumer {}'.format(consumer.index), color=agent_colors[consumer.index])
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xticks(range(len(agent_stats[consumers[0].index].get_follow_proportion(agent))))
+    plt.show()
+
+def plot_ending_value_perfect_imperfect_difference_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], value_name, varied_values, xlabel, ylabel):
+    plt.figure()
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    if len(perfect_info_stats) > 0:
+        perfect_ending_values = [getattr(perfect_info_stats[i], value_name)[-1] for i in range(len(perfect_info_stats))]
+    if len(imperfect_info_stats) > 0:
+        imperfect_ending_values = [getattr(imperfect_info_stats[i], value_name)[-1] for i in range(len(imperfect_info_stats))]
+    plt.plot(varied_values, [np.linalg.norm(perfect_ending_values[i] - imperfect_ending_values[i]) for i in range(len(perfect_info_stats))])
+    plt.xlim(min(varied_values), max(varied_values))
     plt.show()

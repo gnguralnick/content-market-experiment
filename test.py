@@ -46,7 +46,7 @@ def test(topics: np.ndarray, varied_param: str, num_agents: int | list[int], num
         # create the market
         market = ContentMarket(topics, prod_rate, ext_prod_rate)
         for i in range(agents):
-            market.add_agent(ConsumerProducer(topic_interest_func, cons_att_bound, cons_ext_prob, cons_delay_sens, init_following_rates_method))
+            market.add_agent(ConsumerProducer(prod_topic_interest_func, cons_topic_interest_func, cons_att_bound, cons_ext_prob, cons_delay_sens, init_following_rates_method))
         for i in range(influencers):
             market.add_agent(Influencer(influencer_att_bound, influencer_delay_sens, init_following_rates_method))
         
@@ -57,13 +57,13 @@ def test(topics: np.ndarray, varied_param: str, num_agents: int | list[int], num
         perfect_info_stats.append(test_stats)
     if use_imperfect_information:
         for combo in param_combinations:
-            [agents, influencers, topic_interest_func,
+            [agents, influencers, prod_topic_interest_func, cons_topic_interest_func,
             cons_att_bound, cons_ext_prob, cons_delay_sens, influencer_att_bound, influencer_delay_sens,
             prod_rate, ext_prod_rate] = combo
             # create the market
             market = ContentMarket(topics, prod_rate, ext_prod_rate)
             for i in range(agents):
-                market.add_agent(ImperfectConsumerProducer(topic_interest_func, cons_att_bound, cons_ext_prob, cons_delay_sens, init_following_rates_method))
+                market.add_agent(ImperfectConsumerProducer(prod_topic_interest_func, cons_topic_interest_func, cons_att_bound, cons_ext_prob, cons_delay_sens, init_following_rates_method))
             for i in range(influencers):
                 market.add_agent(Influencer(influencer_att_bound, influencer_delay_sens, init_following_rates_method))
             

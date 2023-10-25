@@ -27,19 +27,20 @@ def minimize_with_retry(fun, x0, args, constraints=None, bounds=None, tol=None, 
         args=args,
         constraints=constraints,
         bounds=bounds,
-        options={'maxiter': 1000},
+        #options={'maxiter': 1000},
         tol=tol
     )
 
     retries = 0
     while not result.success and retries < num_retry:
+        print('Optimization failed:', result.message, 'Retrying...')
         result = opt.minimize(
             fun=fun,
             x0=result.x,
             args=args,
             bounds=bounds,
             constraints=constraints,
-            options={'maxiter': 1000,'maxls': 1000, 'ftol': 2e-9, 'gtol': 1e-8},
+            options={'maxiter': 1000,'maxls': 1000, 'ftol': 2e-9, 'gtol': 1e-8} if retries > 0 else {'maxls': 500},
             tol=1e-9
         )
 

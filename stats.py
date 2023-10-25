@@ -12,11 +12,13 @@ class AgentStats:
         self.utility_change = [0]
         self.market = market
         self.agent = agent
+        self.optimization_times = []
 
     def to_dict(self):
         return {
             'utilities': self.utilities,
             'utility_change': self.utility_change,
+            'optimization_times': self.optimization_times,
         }
 
 class ConsumerStats(AgentStats):
@@ -28,7 +30,7 @@ class ConsumerStats(AgentStats):
         self.attention_used = [sum(consumer.get_following_rate_vector())]
         self.rate_change = [0]
 
-    def update(self):
+    def update(self, optimization_time):
         self.following_rates.append(self.consumer.get_following_rate_vector())
         self.attention_used.append(sum(self.consumer.get_following_rate_vector()))
         self.rate_change.append(np.linalg.norm(self.following_rates[-1] - self.following_rates[-2]))
@@ -37,6 +39,8 @@ class ConsumerStats(AgentStats):
         self.utilities.append(utility)
 
         self.utility_change.append(self.utilities[-1] - self.utilities[-2])
+
+        self.optimization_times.append(optimization_time)
     
     def get_follow_proportion(self, agent: str):
         if agent == 'external':
@@ -66,7 +70,7 @@ class ProducerStats(AgentStats):
         self.topic_change = [0]
         self.topic_distance = [np.linalg.norm(producer.topic_produced - producer.main_interest)]
 
-    def update(self):
+    def update(self, optimization_time):
         self.topics.append(self.producer.topic_produced)
         self.topic_change.append(np.linalg.norm(self.topics[-1] - self.topics[-2]))
         self.topic_distance.append(np.linalg.norm(self.producer.topic_produced - self.producer.main_interest))
@@ -75,6 +79,8 @@ class ProducerStats(AgentStats):
         self.utilities.append(utility)
 
         self.utility_change.append(self.utilities[-1] - self.utilities[-2])
+
+        self.optimization_times.append(optimization_time)
 
     def to_dict(self):
         return super().to_dict() | {
@@ -92,7 +98,7 @@ class InfluencerStats(AgentStats):
         self.attention_used = [sum(influencer.get_following_rate_vector())]
         self.rate_change = [0]
 
-    def update(self):
+    def update(self, optimization_time):
         self.following_rates.append(self.influencer.get_following_rate_vector())
         self.attention_used.append(sum(self.influencer.get_following_rate_vector()))
         self.rate_change.append(np.linalg.norm(self.following_rates[-1] - self.following_rates[-2]))
@@ -101,6 +107,8 @@ class InfluencerStats(AgentStats):
         self.utilities.append(utility)
 
         self.utility_change.append(self.utilities[-1] - self.utilities[-2])
+
+        self.optimization_times.append(optimization_time)
 
     def to_dict(self):
         return super().to_dict() | {
@@ -130,6 +138,7 @@ class TestStats:
         self.influencer_stats = {influencer.index: InfluencerStats(influencer, self.market) for influencer in market.influencers}
 
         self.optimization_time = 0
+        self.optimization_times = []
 
     @property
     def average_consumer_utility(self):
@@ -150,20 +159,24 @@ class TestStats:
     def get_average_follow_proportion_by_iteration(self, agent: str):
         return [np.mean([self.consumer_stats[consumer.index].get_follow_proportion(agent)[i] for consumer in self.market.consumers]) for i in range(self.num_iterations + 1)]
     
+    @property
+    def average_influencer_follow_proportion(self):
+        return self.get_average_follow_proportion_by_iteration('influencer')
+    
     def finish(self, optimization_time):
         self.optimization_time = optimization_time
         self.finished = True
 
-    def update(self):
+    def update(self, optimization_time, consumer_times, producer_times, influencer_times):
         if self.finished:
             raise ValueError("Cannot update finished test.")
         self.num_iterations += 1
         for consumer in self.market.consumers:
-            self.consumer_stats[consumer.index].update()
+            self.consumer_stats[consumer.index].update(consumer_times[consumer.index])
         for producer in self.market.producers:
-            self.producer_stats[producer.index].update()
+            self.producer_stats[producer.index].update(producer_times[producer.index])
         for influencer in self.market.influencers:
-            self.influencer_stats[influencer.index].update()
+            self.influencer_stats[influencer.index].update(influencer_times[influencer.index])
 
         self.total_consumer_utility.append(sum([self.consumer_stats[consumer.index].utilities[-1] for consumer in self.market.consumers]))
         self.total_producer_utility.append(sum([self.producer_stats[producer.index].utilities[-1] for producer in self.market.producers]))
@@ -177,6 +190,8 @@ class TestStats:
         self.average_consumer_utility_change.append(np.mean([self.consumer_stats[consumer.index].utility_change[-1] for consumer in self.market.consumers]))
         self.average_producer_utility_change.append(np.mean([self.producer_stats[producer.index].utility_change[-1] for producer in self.market.producers]))
         self.average_influencer_utility_change.append(np.mean([self.influencer_stats[influencer.index].utility_change[-1] for influencer in self.market.influencers]))
+
+        self.optimization_times.append(optimization_time)
 
     def to_dict(self):
         return {
@@ -195,5 +210,6 @@ class TestStats:
             'producer_stats': {producer.index: self.producer_stats[producer.index].to_dict() for producer in self.market.producers},
             'influencer_stats': {influencer.index: self.influencer_stats[influencer.index].to_dict() for influencer in self.market.influencers},
             'optimization_time': self.optimization_time,
+            'optimization_times': self.optimization_times,
         }
         
