@@ -3,6 +3,9 @@ import numpy as np
 
 from agents import Consumer, Producer, Agent, Influencer
 from stats import *
+from content_market import ContentMarket
+
+import networkx as nx
 
 def get_agent_title(agent: Agent):
     subclass_checks = [isinstance(agent, Consumer), isinstance(agent, Producer), isinstance(agent, Influencer)]
@@ -180,6 +183,37 @@ def plot_following_rates_by_iteration(agents: list[Consumer | Influencer], follo
         ax.label_outer()
     plt.show()
 
+def plot_agent_following_rates(agents: list[Consumer | Influencer], agent_stats: dict[int, ConsumerStats | InfluencerStats], agent_colors):
+    if len(agents) == 0:
+        return
+    fig = plt.figure(figsize=(5, 5 * len(agents)))
+    for i, agent in enumerate(agents):
+        ax = fig.add_subplot(len(agents), 1, i + 1)
+        ax.set_title(f"Following rates for {get_agent_title(agent)}")
+        topics_bounds = agent.market.topics_bounds[0]
+        
+        prod_main_interest_with_rates = [(prod.main_interest[0], agent_stats[agent.index].following_rates[-1][prod.index]) for prod in agent.market.producers if prod != agent]
+        prod_main_interest_with_rates.sort(key=lambda x: x[0])
+        ax.plot([x[0] for x in prod_main_interest_with_rates], [x[1] for x in prod_main_interest_with_rates], label='Following rate by producer main interest', marker='o')
+
+        prod_topic_produced_with_rates = [(prod.topic_produced[0], agent_stats[agent.index].following_rates[-1][prod.index]) for prod in agent.market.producers if prod != agent]
+        prod_topic_produced_with_rates.sort(key=lambda x: x[0])
+        ax.plot([x[0] for x in prod_topic_produced_with_rates], [x[1] for x in prod_topic_produced_with_rates], label='Following rate by producer topic produced', marker='o')
+
+        # for prod in agent.market.producers:
+        #     if prod == agent:
+        #         continue
+        #     ax.scatter([prod.main_interest[0], prod.topic_produced[0]], [agent_stats[agent.index].following_rates[-1][prod.index], agent_stats[agent.index].following_rates[-1][prod.index]], color=agent_colors[prod.index], marker='o', label='Producer {}'.format(prod.index))
+        
+        # add vertical line for the agent's main interest (if its a consumer)
+        if isinstance(agent, Consumer):
+            ax.axvline(agent.main_interest[0], color='black', linestyle='--', label='Consumer main interest')
+        
+        ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+        ax.set_xlim(topics_bounds[0], topics_bounds[1])
+        ax.set_xlabel('Topic')
+    plt.show()
+
 def plot_follows_by_iteration(agents: list[Producer | Influencer], followers: list[Consumer | Influencer], agent_colors, agent_stats: dict[int, ConsumerStats | InfluencerStats]):
     if len(agents) == 0 or len(followers) == 0:
         return
@@ -290,4 +324,118 @@ def plot_ending_value_perfect_imperfect_difference_by_test(title, perfect_info_s
         imperfect_ending_values = [getattr(imperfect_info_stats[i], value_name)[-1] for i in range(len(imperfect_info_stats))]
     plt.plot(varied_values, [np.linalg.norm(perfect_ending_values[i] - imperfect_ending_values[i]) for i in range(len(perfect_info_stats))])
     plt.xlim(min(varied_values), max(varied_values))
+    plt.show()
+
+def visualize_market(market: ContentMarket, stats: TestStats, agent_colors):
+    G = nx.DiGraph()
+    pos = {}
+    for agent in market.agents:
+        G.add_node(agent.index, color=agent_colors[agent.index])
+        if isinstance(agent, Producer):
+            pos[agent.index] = (agent.main_interest[0], 0)
+        if isinstance(agent, Influencer):
+            pos[agent.index] = (0, 1)
+    G.add_node("External", color='white')
+    pos["External"] = (1, 1)
+
+    print(pos)
+    
+    for consumer in market.consumers:
+        for agent in market.agents:
+            if stats.consumer_stats[consumer.index].following_rates[-1][agent.index] > 0:
+                G.add_edge(consumer.index, agent.index, weight=stats.consumer_stats[consumer.index].following_rates[-1][agent.index])
+        if stats.consumer_stats[consumer.index].following_rates[-1][-1] > 0:
+            G.add_edge(consumer.index, "External", weight=stats.consumer_stats[consumer.index].following_rates[-1][-1])
+    
+    for influencer in market.influencers:
+        for agent in market.agents:
+            if stats.influencer_stats[influencer.index].following_rates[-1][agent.index] > 0:
+                G.add_edge(influencer.index, agent.index, weight=stats.influencer_stats[influencer.index].following_rates[-1][agent.index])
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(10, 10)
+
+    edges = G.edges()
+    edge_weights = [G[u][v]['weight'] for u,v in edges]
+    min_weight = min(edge_weights)
+    max_weight = max(edge_weights)
+    edge_weights = [(weight - min_weight) / (max_weight - min_weight) * 1 + 0.25 for weight in edge_weights]
+
+    nx.draw(G, pos, with_labels=True, ax=ax, node_color=[G.nodes[n]['color'] for n in G.nodes], width=edge_weights)
+    edge_labels = nx.get_edge_attributes(G, 'weight')
+    #nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    #plt.axhline(-0.5, color='black', linewidth=0.5)  # Draws the x-axis
+    plt.axis('on')
+    ax.set_xlim(market.topics_bounds[0][0] - 0.25, market.topics_bounds[0][1] + 0.25)
+    #plt.xticks(ticks=np.arange(-1, 1, 0.1), rotation=45)
+    ax.tick_params(bottom=True, labelbottom=True)
+    plt.show()
+
+def visualize_influencer(market: ContentMarket, stats: InfluencerStats, agent_colors):
+    G = nx.DiGraph()
+    pos = {}
+    for agent in market.agents:
+        G.add_node(agent.index, color=agent_colors[agent.index])
+        if isinstance(agent, Producer):
+            pos[agent.index] = (agent.main_interest[0], 0)
+        if isinstance(agent, Influencer):
+            pos[agent.index] = (0, 1)
+    
+    for influencer in market.influencers:
+        for agent in market.agents:
+            if stats.following_rates[-1][agent.index] > 0:
+                G.add_edge(influencer.index, agent.index, weight=stats.following_rates[-1][agent.index])
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(10, 10)
+
+    edges = G.edges()
+    edge_weights = [G[u][v]['weight'] for u,v in edges]
+    min_weight = min(edge_weights)
+    max_weight = max(edge_weights)
+    edge_weights = [(weight - min_weight) / (max_weight - min_weight) * 1 + 0.25 for weight in edge_weights]
+
+    nx.draw(G, pos, with_labels=True, ax=ax, node_color=[G.nodes[n]['color'] for n in G.nodes], width=edge_weights)
+    edge_labels = nx.get_edge_attributes(G, 'weight')
+    #nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    #plt.axhline(-0.5, color='black', linewidth=0.5)  # Draws the x-axis
+    plt.axis('on')
+    ax.set_xlim(market.topics_bounds[0][0] - 0.25, market.topics_bounds[0][1] + 0.25)
+    #plt.xticks(ticks=np.arange(-1, 1, 0.1), rotation=45)
+    ax.tick_params(bottom=True, labelbottom=True)
+    plt.show()
+
+def visualize_consumer(market: ContentMarket, stats: ConsumerStats, agent_colors):
+    G = nx.DiGraph()
+    pos = {}
+    for agent in market.agents:
+        G.add_node(agent.index, color=agent_colors[agent.index])
+        if agent == stats.agent:
+            pos[agent.index] = (agent.main_interest[0], 0.5)
+        elif isinstance(agent, Producer):
+            pos[agent.index] = (agent.main_interest[0], 0)
+        elif isinstance(agent, Influencer):
+            pos[agent.index] = (1, 1)
+    G.add_node("External", color='white')
+    pos["External"] = (-1, 1)
+    
+    for agent in market.agents:
+        if stats.following_rates[-1][agent.index] > 0:
+            G.add_edge(stats.agent.index, agent.index, weight=stats.following_rates[-1][agent.index])
+    G.add_edge(stats.agent.index, "External", weight=stats.following_rates[-1][-1])
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(10, 10)
+
+    edges = G.edges()
+    edge_weights = [G[u][v]['weight'] for u,v in edges]
+    min_weight = min(edge_weights)
+    max_weight = max(edge_weights)
+    edge_weights = [(weight - min_weight) / (max_weight - min_weight) * 1 + 0.25 for weight in edge_weights]
+
+    nx.draw(G, pos, with_labels=True, ax=ax, node_color=[G.nodes[n]['color'] for n in G.nodes], width=edge_weights)
+    
+    plt.axis('on')
+    ax.set_xlim(market.topics_bounds[0][0] - 0.25, market.topics_bounds[0][1] + 0.25)
+    ax.tick_params(bottom=True, labelbottom=True)
     plt.show()
