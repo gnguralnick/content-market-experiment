@@ -74,7 +74,7 @@ class ContentMarket:
     def even_topics(self):
         num_producers = self.num_producers
         num_consumers = self.num_consumers
-        overlap = set(agent for agent in self.agents if isinstance(agent, Producer) and isinstance(agent, Consumer))
+        overlap = list(agent for agent in self.agents if isinstance(agent, Producer) and isinstance(agent, Consumer))
         num_overlap = len(overlap)
 
         topic_min = self.topics_bounds[:, 0]
@@ -221,14 +221,14 @@ class ContentMarket:
 
                     if not result.success:
                         raise RuntimeError("Optimization failed", result)
-                    
-                    print(f"Optimization succeeded using {result.nit} iterations and {result.nfev} function evaluations.")
 
                     #producer.topic_produced = result.x
                     producer_updates[producer.index] = result.x
 
                     prod_end_time = timer()
                     producer_times[producer.index] = prod_end_time - prod_start_time
+
+                    print(f"Optimization succeeded (overall {prod_end_time - prod_start_time}s): nit={result.nit}, nfev={result.nfev}, njev={result.njev}.")
 
 
             for consumer in self.consumers:
