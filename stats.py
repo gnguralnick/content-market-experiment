@@ -163,6 +163,14 @@ class TestStats:
     def average_influencer_follow_proportion(self):
         return self.get_average_follow_proportion_by_iteration('influencer')
     
+    @property
+    def average_external_follow_proportion(self):
+        return self.get_average_follow_proportion_by_iteration('external')
+    
+    @property
+    def average_producer_topic_distance_from_main_interest(self):
+        return [np.mean([self.producer_stats[producer.index].topic_distance[i] for producer in self.market.producers]) for i in range(self.num_iterations + 1)]
+    
     def finish(self, optimization_time):
         self.optimization_time = optimization_time
         self.finished = True
@@ -181,7 +189,7 @@ class TestStats:
         self.total_consumer_utility.append(sum([self.consumer_stats[consumer.index].utilities[-1] for consumer in self.market.consumers]))
         self.total_producer_utility.append(sum([self.producer_stats[producer.index].utilities[-1] for producer in self.market.producers]))
         self.total_influencer_utility.append(sum([self.influencer_stats[influencer.index].utilities[-1] for influencer in self.market.influencers]))
-        self.total_social_welfare.append(self.total_consumer_utility[-1] + self.total_producer_utility[-1] + self.total_influencer_utility[-1])
+        self.total_social_welfare.append(self.total_consumer_utility[-1])
 
         self.average_consumer_rate_change.append(np.mean([self.consumer_stats[consumer.index].rate_change[-1] for consumer in self.market.consumers]))
         self.average_producer_topic_change.append(np.mean([self.producer_stats[producer.index].topic_change[-1] for producer in self.market.producers]))
@@ -212,4 +220,3 @@ class TestStats:
             'optimization_time': self.optimization_time,
             'optimization_times': self.optimization_times,
         }
-        

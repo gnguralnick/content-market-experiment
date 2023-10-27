@@ -12,7 +12,7 @@ class Consumer(Agent):
         Agent.__init__(self)
         self.main_interest = None
 
-        self._topic_interest_function = topic_interest_function
+        self._consumption_topic_interest_function = topic_interest_function
         self.attention_bound = attention_bound
         
         self.external_interest_prob = external_interest_prob
@@ -55,7 +55,7 @@ class Consumer(Agent):
         if not self.market.check_topic(topic):
             raise ValueError("Topic is not in the market.")
         distance = np.linalg.norm(topic - self.main_interest)
-        return self._topic_interest_function(distance)
+        return self._consumption_topic_interest_function(distance)
     
     def check_following_rates(self, value: dict[int, float]) -> bool:
         if sum(value.values()) - self.attention_bound > 1e-6:

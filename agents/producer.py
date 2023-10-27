@@ -12,7 +12,7 @@ class Producer(Agent):
 
         self.main_interest = None
         self.topic_produced = None
-        self._topic_interest_function = topic_interest_function
+        self._production_topic_interest_function = topic_interest_function
 
     def set_main_interest(self, main_interest: np.ndarray):
         self.main_interest = main_interest
@@ -24,7 +24,7 @@ class Producer(Agent):
         if not self.market.check_topic(topic):
             raise ValueError("Topic is not in the market.")
         distance = np.linalg.norm(topic - self.main_interest)
-        return self._topic_interest_function(distance)
+        return self._production_topic_interest_function(distance)
 
     def utility(self, x: np.ndarray, *args) -> float:
         if self.market is None or self.index is None:
