@@ -152,10 +152,6 @@ class TestStats:
     def average_influencer_utility(self):
         return [utility / self.market.num_influencers for utility in self.total_influencer_utility]
     
-    @property
-    def average_agent_utility(self):
-        return [utility / self.market.num_agents for utility in self.total_social_welfare]
-    
     def get_average_follow_proportion_by_iteration(self, agent: str):
         return [np.mean([self.consumer_stats[consumer.index].get_follow_proportion(agent)[i] for consumer in self.market.consumers]) for i in range(self.num_iterations + 1)]
     
