@@ -1,5 +1,6 @@
 import numpy as np
 from agents import *
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -178,6 +179,19 @@ class TestStats:
     @property
     def average_consumer_num_producers_followed(self):
         return [np.mean([self.consumer_stats[consumer.index].num_producers_followed[i] for consumer in self.market.consumers]) for i in range(self.num_iterations + 1)]
+    
+    @property
+    def average_following_rate_by_main_interest_closeness(self):
+        following_rates_by_main_interest_closeness = defaultdict(list)
+        for consumer in self.market.consumers:
+            for producer in sorted(self.market.producers, key=lambda x: np.linalg.norm(x.main_interest - consumer.main_interest)):
+                if producer == consumer:
+                    continue
+                interest_closeness = np.linalg.norm(producer.main_interest - consumer.main_interest)
+                following_rates_by_main_interest_closeness[interest_closeness].append(self.consumer_stats[consumer.index].following_rates[-1][producer.index])
+
+        return sorted([(interest_closeness, np.mean(following_rates)) for interest_closeness, following_rates in following_rates_by_main_interest_closeness.items()], key=lambda x: x[0])
+            
     
     def finish(self, optimization_time):
         self.optimization_time = optimization_time

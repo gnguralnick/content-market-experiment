@@ -143,13 +143,15 @@ def plot_total_social_welfare_by_iteration(title, stats: TestStats):
     plt.xticks(range(0, stats.num_iterations))
     plt.show()
 
-def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consumer], producers: list[Producer], agent_colors, agent_stats: dict[int, ConsumerStats]):
+def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consumer], producers: list[Producer], agent_colors, agent_stats: dict[int, ConsumerStats], averages=None):
     if len(consumers) == 0 or len(producers) == 0:
         return
     plt.figure()
     plt.title(title)
     plt.xlabel('Main interest closeness')
     plt.ylabel('Following rate')
+    if averages:
+        plt.plot(averages[0], averages[1], label="Average")
     for consumer in consumers:
         interest_closeness = []
         following_rate = []
@@ -190,14 +192,14 @@ def plot_agent_following_rates(agents: list[Consumer | Influencer], agent_stats:
     fig = plt.figure(figsize=(5, 5 * len(agents)))
     for i, agent in enumerate(agents):
         ax = fig.add_subplot(len(agents), 1, i + 1)
-        ax.set_title(f"Following rates for {get_agent_title(agent)}")
+        ax.set_title(f"Following rates percentages for {get_agent_title(agent)}")
         topics_bounds = agent.market.topics_bounds[0]
         
-        prod_main_interest_with_rates = [(prod.main_interest[0], agent_stats[agent.index].following_rates[-1][prod.index]) for prod in agent.market.producers if prod != agent]
+        prod_main_interest_with_rates = [(prod.main_interest[0], agent_stats[agent.index].following_rates[-1][prod.index] / agent.attention_bound * 100) for prod in agent.market.producers if prod != agent]
         prod_main_interest_with_rates.sort(key=lambda x: x[0])
         ax.plot([x[0] for x in prod_main_interest_with_rates], [x[1] for x in prod_main_interest_with_rates], label='Following rate by producer main interest', marker='o')
 
-        prod_topic_produced_with_rates = [(prod.topic_produced[0], agent_stats[agent.index].following_rates[-1][prod.index]) for prod in agent.market.producers if prod != agent]
+        prod_topic_produced_with_rates = [(prod.topic_produced[0], agent_stats[agent.index].following_rates[-1][prod.index] / agent.attention_bound * 100) for prod in agent.market.producers if prod != agent]
         prod_topic_produced_with_rates.sort(key=lambda x: x[0])
         ax.plot([x[0] for x in prod_topic_produced_with_rates], [x[1] for x in prod_topic_produced_with_rates], label='Following rate by producer topic produced', marker='o')
 
@@ -233,8 +235,9 @@ def plot_follows_by_iteration(agents: list[Producer | Influencer], followers: li
         ax.label_outer()
     plt.show()
 
-def plot_ending_value_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], value_name, varied_values, xlabel, ylabel):
-    plt.figure()
+def plot_ending_value_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], value_name, varied_values, xlabel, ylabel, figure=True):
+    if figure:
+        plt.figure()
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -248,8 +251,34 @@ def plot_ending_value_by_test(title, perfect_info_stats: list[TestStats], imperf
     plt.xlim(min(varied_values), max(varied_values))
     plt.show()
 
-def plot_cost_of_influence_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], varied_values, xlabel):
+def plot_agent_following_rates_by_test(index: int, stats: list[dict[int, ConsumerStats | InfluencerStats]], varied_param, varied_values):
     plt.figure()
+    plt.title(f"Following rates for {get_agent_title(stats[0][index].agent)}")
+    topics_bounds = stats[0][index].agent.market.topics_bounds[0]
+
+    agent = stats[0][index].agent
+    if isinstance(agent, Consumer):
+        plt.axvline(agent.main_interest[0], color='black', linestyle='--', label='Consumer main interest')
+
+    for i in range(len(stats)):
+        agent_stats = stats[i][index]
+        agent: Consumer | Influencer = agent_stats.agent
+        prod_main_interest_with_rates = [(prod.main_interest[0], agent_stats.following_rates[-1][prod.index] / agent.attention_bound * 100) for prod in agent.market.producers if prod != agent]
+        prod_main_interest_with_rates.sort(key=lambda x: x[0])
+        plt.plot([x[0] for x in prod_main_interest_with_rates], [x[1] for x in prod_main_interest_with_rates], label=f'{varied_param} = {varied_values[i]}', marker='o')
+
+
+    
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.xlim(topics_bounds[0] - 0.05, topics_bounds[1] + 0.05)
+    plt.xlabel('Producer Main Interest')
+    plt.ylabel('Following rate (%)')
+    plt.show()
+
+
+def plot_cost_of_influence_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], varied_values, xlabel, figure=True):
+    if figure:
+        plt.figure()
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel('Cost of influence (%)')
@@ -262,8 +291,9 @@ def plot_cost_of_influence_by_test(title, perfect_info_stats: list[TestStats], i
     plt.xlim(min(varied_values), max(varied_values))
     plt.show()
 
-def plot_value_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], value_name, varied_values, xlabel, ylabel):
-    plt.figure()
+def plot_value_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], value_name, varied_values, xlabel, ylabel, figure=True):
+    if figure:
+        plt.figure()
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -299,8 +329,9 @@ def plot_value_by_agent_by_iteration(title, agent_stats: dict[int, AgentStats], 
     plt.xticks(range(len(getattr(agent_stats[0], value_name))))
     plt.show()
 
-def plot_value_by_iteration_by_test(title, stats: list[TestStats], value_name, varied_name, varied_values, ylabel):
-    plt.figure()
+def plot_value_by_iteration_by_test(title, stats: list[TestStats], value_name, varied_name, varied_values, ylabel, figure=True):
+    if figure:
+        plt.figure()
     plt.title(title)
     plt.xlabel('Iteration')
     plt.ylabel(ylabel)
