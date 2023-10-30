@@ -54,6 +54,10 @@ class ConsumerStats(AgentStats):
             follow.append(vec[index])
         return [follow[i] / self.attention_used[i] for i in range(len(follow))]
     
+    @property
+    def num_producers_followed(self):
+        return [sum([1 if vec[i] > 0 else 0 for i in range(self.market.num_producers)]) for vec in self.following_rates]
+    
     def to_dict(self):
         return super().to_dict() | {
             'following_rates': self.following_rates,
@@ -166,6 +170,14 @@ class TestStats:
     @property
     def average_producer_topic_distance_from_main_interest(self):
         return [np.mean([self.producer_stats[producer.index].topic_distance[i] for producer in self.market.producers]) for i in range(self.num_iterations + 1)]
+    
+    @property
+    def producer_topic_standard_deviation(self):
+        return [np.std([self.producer_stats[producer.index].topics[i] for producer in self.market.producers]) for i in range(self.num_iterations + 1)]
+    
+    @property
+    def average_consumer_num_producers_followed(self):
+        return [np.mean([self.consumer_stats[consumer.index].num_producers_followed[i] for consumer in self.market.consumers]) for i in range(self.num_iterations + 1)]
     
     def finish(self, optimization_time):
         self.optimization_time = optimization_time

@@ -95,17 +95,18 @@ def plot_attention_used_by_iteration(title, agents: list[Consumer | Influencer],
     plt.ylim(0, max(agent.attention_bound for agent in agents) + 1)
     plt.show()
 
-def plot_producer_topic_produced_by_iteration(title, producers: list[Producer], consumers: list[Consumer], agent_colors, agent_stats: dict[int, ProducerStats]):
+def plot_producer_topic_produced_by_iteration(title, producers: list[Producer], consumers: list[Consumer], agent_colors, agent_stats: dict[int, ProducerStats], show_consumer_main_interest=True):
     if len(producers) == 0:
         return
     plt.figure()
     plt.title(title)
     for producer in producers:
         plt.plot(agent_stats[producer.index].topics, label='Producer {}'.format(producer.index), color=agent_colors[producer.index])
-    for consumer in consumers:
-        plt.plot([consumer.main_interest] * len(agent_stats[producer.index].topics), label='Consumer {}'.format(consumer.index), linestyle='--', color=agent_colors[consumer.index])
+    if show_consumer_main_interest:
+        for consumer in consumers:
+            plt.plot([consumer.main_interest] * len(agent_stats[producer.index].topics), label='Consumer {}'.format(consumer.index), linestyle='--', color=agent_colors[consumer.index])
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    plt.ylim(min(min(agent.main_interest for agent in producers), min(agent.main_interest for agent in consumers)) - 0.5, max(max(agent.main_interest for agent in producers), max(agent.main_interest for agent in consumers)) + 0.5)
+    plt.ylim(min(min(agent.main_interest for agent in producers), min(agent.main_interest for agent in consumers)) - 0.05, max(max(agent.main_interest for agent in producers), max(agent.main_interest for agent in consumers)) + 0.05)
     plt.xticks(range(len(agent_stats[producers[0].index].topics)))
     plt.show()
 
@@ -247,16 +248,16 @@ def plot_ending_value_by_test(title, perfect_info_stats: list[TestStats], imperf
     plt.xlim(min(varied_values), max(varied_values))
     plt.show()
 
-def plot_cost_of_influence_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], varied_values, xlabel, ylabel):
+def plot_cost_of_influence_by_test(title, perfect_info_stats: list[TestStats], imperfect_info_stats: list[TestStats], varied_values, xlabel):
     plt.figure()
     plt.title(title)
     plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.ylabel('Cost of influence (%)')
     cost = []
     if not len(perfect_info_stats) == len(imperfect_info_stats):
         raise ValueError("Perfect and imperfect information stats must have the same length.")
     for i in range(len(perfect_info_stats)):
-        cost.append(perfect_info_stats[i].total_social_welfare[-1] - imperfect_info_stats[i].total_social_welfare[-1])
+        cost.append((perfect_info_stats[i].total_social_welfare[-1] - imperfect_info_stats[i].total_social_welfare[-1]) / perfect_info_stats[i].total_social_welfare[-1] * 100)
     plt.plot(varied_values, cost)
     plt.xlim(min(varied_values), max(varied_values))
     plt.show()
@@ -274,6 +275,28 @@ def plot_value_by_test(title, perfect_info_stats: list[TestStats], imperfect_inf
         plt.plot(varied_values, imperfect_values, label='Imperfect Information')
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xlim(min(varied_values), max(varied_values))
+    plt.show()
+
+def plot_value_by_iteration(title, stats: TestStats, value_name, ylabel):
+    plt.figure()
+    plt.title(title)
+    plt.xlabel('Iteration')
+    plt.ylabel(ylabel)
+    plt.plot(getattr(stats, value_name))
+    plt.xticks(range(stats.num_iterations))
+    plt.show()
+
+def plot_value_by_agent_by_iteration(title, agent_stats: dict[int, AgentStats], value_name, ylabel, averages=None):
+    plt.figure()
+    plt.title(title)
+    plt.xlabel('Iteration')
+    plt.ylabel(ylabel)
+    if averages:
+        plt.plot(averages, label="Average")
+    for agent in agent_stats:
+        plt.plot(getattr(agent_stats[agent], value_name), label=get_agent_title(agent_stats[agent].agent))
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+    plt.xticks(range(len(getattr(agent_stats[0], value_name))))
     plt.show()
 
 def plot_value_by_iteration_by_test(title, stats: list[TestStats], value_name, varied_name, varied_values, ylabel):
@@ -299,6 +322,7 @@ def plot_producer_topic_distance_from_main_interest_by_iteration(title, producer
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xticks(range(len(agent_stats[producers[0].index].topic_distance)))
     plt.show()
+    
 
 def plot_follow_proportion_by_iteration(title, consumers: list[Consumer], agent_colors, agent_stats: dict[int, ConsumerStats], agent: str, averages=None):
     if len(consumers) == 0:
@@ -385,6 +409,40 @@ def visualize_influencer(market: ContentMarket, stats: InfluencerStats, agent_co
         for agent in market.agents:
             if stats.following_rates[-1][agent.index] > 0:
                 G.add_edge(influencer.index, agent.index, weight=stats.following_rates[-1][agent.index])
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(10, 10)
+
+    edges = G.edges()
+    edge_weights = [G[u][v]['weight'] for u,v in edges]
+    min_weight = min(edge_weights)
+    max_weight = max(edge_weights)
+    edge_weights = [(weight - min_weight) / (max_weight - min_weight) * 1 + 0.25 for weight in edge_weights]
+
+    nx.draw(G, pos, with_labels=True, ax=ax, node_color=[G.nodes[n]['color'] for n in G.nodes], width=edge_weights)
+    edge_labels = nx.get_edge_attributes(G, 'weight')
+    #nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+    #plt.axhline(-0.5, color='black', linewidth=0.5)  # Draws the x-axis
+    plt.axis('on')
+    ax.set_xlim(market.topics_bounds[0][0] - 0.25, market.topics_bounds[0][1] + 0.25)
+    #plt.xticks(ticks=np.arange(-1, 1, 0.1), rotation=45)
+    ax.tick_params(bottom=True, labelbottom=True)
+    plt.show()
+
+def visualize_influencer_followers(market: ContentMarket, stats: dict[int, ConsumerStats], agent_colors):
+    G = nx.DiGraph()
+    pos = {}
+    for agent in market.agents:
+        G.add_node(agent.index, color=agent_colors[agent.index])
+        if isinstance(agent, Consumer):
+            pos[agent.index] = (agent.main_interest[0], 0)
+        if isinstance(agent, Influencer):
+            pos[agent.index] = (0, 1)
+    
+    for influencer in market.influencers:
+        for consumer in market.consumers:
+            if stats[consumer.index].following_rates[-1][influencer.index] > 0:
+                G.add_edge(consumer.index, influencer.index, weight=stats[consumer.index].following_rates[-1][influencer.index])
 
     fig, ax = plt.subplots()
     fig.set_size_inches(10, 10)
