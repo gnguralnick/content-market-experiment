@@ -17,8 +17,36 @@ class Producer(Agent):
     def set_main_interest(self, main_interest: np.ndarray):
         self.main_interest = main_interest
 
-    def reset(self):
-        self.topic_produced = self.main_interest
+    def reset(self, position = 'main'):
+        """
+        Reset the producer. This will reset the topic produced according to the given method.
+        main: the producer will produce content about its main interest
+        random: the producer will produce content about a random topic
+        center: the producer will produce content about the center of the market
+        opposite: the producer will produce content about the opposite of its main interest
+        farthest: the producer will produce content about the farthest topic from its main interest
+        """
+        if position == 'main' or position is None:
+            self.topic_produced = self.main_interest
+        elif position == 'random':
+            self.topic_produced = self.market.sample_topic()
+        elif position == 'center':
+            topic_center = np.mean(self.market.topics_bounds, axis=1)
+            self.topic_produced = topic_center
+        elif position == 'opposite':
+            topic_center = np.mean(self.market.topics_bounds, axis=1)
+            self.topic_produced = topic_center + (topic_center - self.main_interest)
+        elif position == 'farthest':
+            topic_center = np.mean(self.market.topics_bounds, axis=1)
+            topic = np.zeros(self.market.topics_dim)
+            for i in range(self.market.topics_dim):
+                if self.main_interest[i] < topic_center[i]:
+                    topic[i] = self.market.topics_bounds[i][1]
+                else:
+                    topic[i] = self.market.topics_bounds[i][0]
+            self.topic_produced = topic
+        else:
+            raise ValueError("Invalid position for producer reset.")
 
     def topic_probability(self, topic: np.ndarray) -> float:
         if not self.market.check_topic(topic):

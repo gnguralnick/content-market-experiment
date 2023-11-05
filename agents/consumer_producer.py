@@ -16,8 +16,8 @@ class ConsumerProducer(Consumer, Producer):
         Consumer.set_market(self, market, index)
         Producer.set_market(self, market, index)
 
-    def reset(self):
-        Producer.reset(self)
+    def reset(self, topic_position=None):
+        Producer.reset(self, topic_position)
         Consumer.reset(self)
 
     def utility(self, x: np.array, *args) -> float:

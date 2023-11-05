@@ -34,6 +34,8 @@ class Influencer(Agent):
                     # only producers and influencers can be followed
                     continue
                 self._following_rates[agent.index] = self.attention_bound / num_producers
+        elif self.init_following_rates_method == 'zero':
+            pass
         else:
             raise ValueError("Unknown init_following_rates_method.")
 

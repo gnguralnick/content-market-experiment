@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+import matplotlib._color_data as mcd
+palette = list(mcd.XKCD_COLORS.values())[::10]
 import numpy as np
 
 from agents import Consumer, Producer, Agent, Influencer
@@ -64,7 +66,7 @@ def plot_agent_utility_by_iteration(title, agents: list[Agent], agent_colors, ag
         plt.plot(averages, label="Average")
     for agent in agents:
         plt.plot(agent_stats[agent.index].utilities, label=get_agent_title(agent), color=agent_colors[agent.index])
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xticks(range(0, len(agent_stats[agents[0].index].utilities)))
     plt.show()
 
@@ -90,7 +92,7 @@ def plot_attention_used_by_iteration(title, agents: list[Consumer | Influencer],
         plt.plot(averages, label="Average")
     for agent in agents:
         plt.plot(list(range(0, len(agent_stats[agent.index].attention_used))), agent_stats[agent.index].attention_used, label=get_agent_title(agent), color=agent_colors[agent.index])
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xticks(range(0, len(agent_stats[agents[0].index].attention_used)))
     plt.ylim(0, max(agent.attention_bound for agent in agents) + 1)
     plt.show()
@@ -119,7 +121,7 @@ def plot_following_rate_change_by_iteration(title, agents: list[Consumer | Influ
         plt.plot(averages, label="Average")
     for agent in agents:
         plt.plot(agent_stats[agent.index].rate_change, label=get_agent_title(agent), color=agent_colors[agent.index])
-    plt.legend()
+    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xticks(range(0, len(agent_stats[agents[0].index].rate_change)))
     plt.show()
 
@@ -149,7 +151,7 @@ def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consum
     plt.figure()
     plt.title(title)
     plt.xlabel('Main interest closeness')
-    plt.ylabel('Following rate')
+    plt.ylabel('Following rate (%)')
     if averages:
         plt.plot(averages[0], averages[1], label="Average")
     for consumer in consumers:
@@ -158,7 +160,7 @@ def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consum
         for producer in sorted(producers, key=lambda p: np.linalg.norm(consumer.main_interest - p.main_interest)):
             if producer == consumer:
                 continue
-            ending_rate = agent_stats[consumer.index].following_rates[-1][producer.index]
+            ending_rate = agent_stats[consumer.index].following_rates[-1][producer.index] / consumer.attention_bound * 100
             interest_closeness.append(np.linalg.norm(consumer.main_interest - producer.main_interest))
             following_rate.append(ending_rate)
         plt.plot(interest_closeness, following_rate, label='Consumer {}'.format(consumer.index), color=agent_colors[consumer.index], marker='o')
@@ -265,7 +267,7 @@ def plot_agent_following_rates_by_test(index: int, stats: list[dict[int, Consume
         agent: Consumer | Influencer = agent_stats.agent
         prod_main_interest_with_rates = [(prod.main_interest[0], agent_stats.following_rates[-1][prod.index] / agent.attention_bound * 100) for prod in agent.market.producers if prod != agent]
         prod_main_interest_with_rates.sort(key=lambda x: x[0])
-        plt.plot([x[0] for x in prod_main_interest_with_rates], [x[1] for x in prod_main_interest_with_rates], label=f'{varied_param} = {varied_values[i]}', marker='o')
+        plt.plot([x[0] for x in prod_main_interest_with_rates], [x[1] for x in prod_main_interest_with_rates], label=f'{varied_param} = {varied_values[i]}', marker='o', color=palette[i])
 
 
     
@@ -336,7 +338,7 @@ def plot_value_by_iteration_by_test(title, stats: list[TestStats], value_name, v
     plt.xlabel('Iteration')
     plt.ylabel(ylabel)
     for i in range(len(stats)):
-        plt.plot(getattr(stats[i], value_name), label=f"{varied_name} = {varied_values[i]}")
+        plt.plot(getattr(stats[i], value_name), label=f"{varied_name} = {varied_values[i]}", color=palette[i])
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.xticks(range(max(test.num_iterations for test in stats)))
     plt.show()

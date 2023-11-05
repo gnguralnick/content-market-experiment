@@ -42,6 +42,8 @@ class Consumer(Agent):
                 self._following_rates[agent.index] = self.attention_bound / (num_producers_or_influencers + 1) # +1 for external
             
             self._following_rates['external'] = self.attention_bound / (num_producers_or_influencers + 1)
+        elif self.init_following_rates_method == 'zero':
+            pass
         else:
             raise ValueError("Unknown init_following_rates_method.")
 

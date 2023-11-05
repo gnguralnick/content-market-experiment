@@ -63,6 +63,11 @@ class ContentMarket:
             self.rand_topics()
         elif method == "even":
             self.even_topics()
+        elif method == "center":
+            topic_center = np.mean(self.topics_bounds, axis=1)
+            for agent in self.agents:
+                if isinstance(agent, Producer) or isinstance(agent, Consumer):
+                    agent.set_main_interest(topic_center)
         else:
             raise ValueError("Unknown method.")
     
@@ -116,12 +121,15 @@ class ContentMarket:
             topic = np.mean(pair, axis=0)
             agent.set_main_interest(np.array(topic))
 
-    def reset(self):
+    def reset(self, topic_position=None):
         """
         Reset the market to its initial state.
         """
         for agent in self.agents:
-            agent.reset()
+            if topic_position is not None and isinstance(agent, Producer):
+                agent.reset(topic_position)
+            else:
+                agent.reset()
 
     def check_topic(self, topic: np.ndarray):
         if topic.shape != (self.topics_dim,):
@@ -136,12 +144,12 @@ class ContentMarket:
         """
         return np.array([np.random.uniform(self.topics_bounds[i, 0], self.topics_bounds[i, 1]) for i in range(self.topics_dim)])
 
-    def optimize(self, max_iterations=100, converge_tol=1e-3) -> TestStats:
+    def optimize(self, max_iterations=100, converge_tol=1e-3, topic_position=None) -> TestStats:
         """
         Optimize the market. This is done by iteratively optimizing the utility functions of the producers, consumers, and influencers.
         """
         self.finalize()
-        self.reset()
+        self.reset(topic_position)
 
         start_time = timer()
 

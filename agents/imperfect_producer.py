@@ -21,7 +21,6 @@ class ImperfectInformationProducer(Producer):
         prev_topic = self.topic_produced
         self.topic_produced = topic
 
-        prev_rates = {influencer.index: influencer.get_following_rate_vector() for influencer in self.market.influencers}
         potential_rates = {}
 
         for influencer in self.market.influencers:
@@ -43,12 +42,10 @@ class ImperfectInformationProducer(Producer):
             potential_rates[influencer.index] = result.x
             
         influencer_reward = 0
-        old_reward = 0
         for influencer in self.market.influencers:
             if not potential_rates[influencer.index][self.index] > 0:
                 continue
             influencer_reward += np.exp(-influencer.delay_sensitivity * (1 / potential_rates[influencer.index][self.index]))
-            old_reward += np.exp(-influencer.delay_sensitivity * (1 / prev_rates[influencer.index][self.index]))
 
         
         self.topic_produced = prev_topic
