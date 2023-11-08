@@ -176,7 +176,8 @@ class ContentMarket:
                         x0=consumer.get_following_rate_vector(),
                         args=(self.production_rate, self.external_production_rate, OptimizationTargets.CONSUMER),
                         constraints=attention_constraint,
-                        bounds=consumer.get_following_rate_bounds()
+                        bounds=consumer.get_following_rate_bounds(),
+                        tol=consumer.optimize_tolerance
                     )
 
                     if not result.success:
@@ -201,7 +202,8 @@ class ContentMarket:
                         x0=influencer.get_following_rate_vector(),
                         args=(self.production_rate, self.external_production_rate, OptimizationTargets.INFLUENCER),
                         constraints=attention_constraint,
-                        bounds=influencer.get_following_rate_bounds()
+                        bounds=influencer.get_following_rate_bounds(),
+                        tol=influencer.optimize_tolerance
                     )
 
                     if not result.success:
@@ -224,7 +226,8 @@ class ContentMarket:
                         x0=producer.topic_produced,
                         args=(self.production_rate, self.external_production_rate, OptimizationTargets.PRODUCER),
                         bounds=self.topics_bounds,
-                        num_retry=2
+                        num_retry=2,
+                        tol=producer.optimize_tolerance
                     )
 
                     if not result.success:
@@ -290,3 +293,15 @@ class ContentMarket:
                     break
                 
         return stats
+
+    def to_dict(self):
+        market_dict = {}
+        market_dict['topics_bounds'] = self.topics_bounds
+        market_dict['production_rate'] = self.production_rate
+        market_dict['external_production_rate'] = self.external_production_rate
+        return market_dict
+
+    @staticmethod
+    def from_dict(market_dict):
+        market = ContentMarket(market_dict['topics_bounds'], market_dict['production_rate'], market_dict['external_production_rate'])
+        return market

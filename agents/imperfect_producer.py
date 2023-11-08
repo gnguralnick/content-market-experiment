@@ -9,8 +9,8 @@ from util import OptimizationTargets, minimize_with_retry
 
 class ImperfectInformationProducer(Producer):
 
-    def __init__(self, topic_interest_function):
-        Producer.__init__(self, topic_interest_function)
+    def __init__(self, topic_interest_function, optimize_tolerance = None):
+        Producer.__init__(self, topic_interest_function, optimize_tolerance)
 
     def utility(self, topic: np.ndarray, *args) -> float:
         if self.market is None:

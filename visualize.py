@@ -204,15 +204,12 @@ def plot_agent_following_rates(agents: list[Consumer | Influencer], agent_stats:
         prod_topic_produced_with_rates = [(prod.topic_produced[0], agent_stats[agent.index].following_rates[-1][prod.index] / agent.attention_bound * 100) for prod in agent.market.producers if prod != agent]
         prod_topic_produced_with_rates.sort(key=lambda x: x[0])
         ax.plot([x[0] for x in prod_topic_produced_with_rates], [x[1] for x in prod_topic_produced_with_rates], label='Following rate by producer topic produced', marker='o')
-
-        # for prod in agent.market.producers:
-        #     if prod == agent:
-        #         continue
-        #     ax.scatter([prod.main_interest[0], prod.topic_produced[0]], [agent_stats[agent.index].following_rates[-1][prod.index], agent_stats[agent.index].following_rates[-1][prod.index]], color=agent_colors[prod.index], marker='o', label='Producer {}'.format(prod.index))
         
-        # add vertical line for the agent's main interest (if its a consumer)
         if isinstance(agent, Consumer):
             ax.axvline(agent.main_interest[0], color='black', linestyle='--', label='Consumer main interest')
+            #ax.axhline(agent_stats[agent.index].following_rates[-1][-1] / agent.attention_bound * 100, color='black', linestyle='--', label='External')
+            #ax.axhline(agent_stats[agent.index].following_rates[-1][-2] / agent.attention_bound * 100, color='blue', linestyle='--', label='Influencer')
+
         
         ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
         ax.set_xlim(topics_bounds[0], topics_bounds[1])

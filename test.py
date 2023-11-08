@@ -2,7 +2,7 @@ from agents import *
 from content_market import ContentMarket
 import numpy as np
 
-def test(topics: np.ndarray, varied_param: str, num_agents: int | list[int], num_influencers: int | list[int],
+def test(topics: np.ndarray | list[np.ndarray], varied_param: str, num_agents: int | list[int], num_influencers: int | list[int],
          producer_topic_interest_func: Callable[[np.ndarray], float] | list[Callable[[np.ndarray], float]] | None,
          consumer_topic_interest_func: Callable[[np.ndarray], float] | list[Callable[[np.ndarray], float]] | None,
          agent_topic_interest_func: Callable[[np.ndarray], float] | list[Callable[[np.ndarray], float]] | None,
@@ -18,11 +18,11 @@ def test(topics: np.ndarray, varied_param: str, num_agents: int | list[int], num
     """
 
     # create a list of all parameters
-    param_names = ['num_agents', 'num_influencers', 'producer_topic_interest_func', 'consumer_topic_interest_func', 'agent_topic_interest_func',
+    param_names = ['topics', 'num_agents', 'num_influencers', 'producer_topic_interest_func', 'consumer_topic_interest_func', 'agent_topic_interest_func',
                    'consumer_attention_bound', 'consumer_external_interest_prob', 'consumer_delay_sensitivity',
                    'influencer_attention_bound', 'influencer_delay_sensitivity', 'production_rate', 'external_production_rate', 
                    'init_following_rates_method', 'init_topic_produced_method']
-    params = [num_agents, num_influencers, producer_topic_interest_func, consumer_topic_interest_func, agent_topic_interest_func,
+    params = [topics, num_agents, num_influencers, producer_topic_interest_func, consumer_topic_interest_func, agent_topic_interest_func,
                 consumer_attention_bound, consumer_external_interest_prob, consumer_delay_sensitivity,
                 influencer_attention_bound, influencer_delay_sensitivity, production_rate, external_production_rate, 
                 init_following_rates_method, init_topic_produced_method]
@@ -44,11 +44,11 @@ def test(topics: np.ndarray, varied_param: str, num_agents: int | list[int], num
 
     # run the test for each combination of parameters
     for combo in param_combinations:
-        [agents, influencers, prod_topic_interest_func, cons_topic_interest_func, ag_topic_interest_func,
+        [topics_bounds, agents, influencers, prod_topic_interest_func, cons_topic_interest_func, ag_topic_interest_func,
          cons_att_bound, cons_ext_prob, cons_delay_sens, influencer_att_bound, influencer_delay_sens,
          prod_rate, ext_prod_rate, following_rates_init, topic_produced_init] = combo
         # create the market
-        market = ContentMarket(topics, prod_rate, ext_prod_rate)
+        market = ContentMarket(topics_bounds, prod_rate, ext_prod_rate)
         for i in range(agents):
             if ag_topic_interest_func is None:
                 market.add_agent(ConsumerProducer(prod_topic_interest_func, cons_topic_interest_func, cons_att_bound, cons_ext_prob, cons_delay_sens, following_rates_init))
@@ -64,11 +64,11 @@ def test(topics: np.ndarray, varied_param: str, num_agents: int | list[int], num
         perfect_info_stats.append(test_stats)
     if use_imperfect_information:
         for combo in param_combinations:
-            [agents, influencers, prod_topic_interest_func, cons_topic_interest_func, ag_topic_interest_func,
+            [topics_bounds, agents, influencers, prod_topic_interest_func, cons_topic_interest_func, ag_topic_interest_func,
             cons_att_bound, cons_ext_prob, cons_delay_sens, influencer_att_bound, influencer_delay_sens,
             prod_rate, ext_prod_rate, following_rates_init, topic_produced_init] = combo
             # create the market
-            market = ContentMarket(topics, prod_rate, ext_prod_rate)
+            market = ContentMarket(topics_bounds, prod_rate, ext_prod_rate)
             for i in range(agents):
                 if ag_topic_interest_func is None:
                     market.add_agent(ImperfectConsumerProducer(prod_topic_interest_func, cons_topic_interest_func, cons_att_bound, cons_ext_prob, cons_delay_sens, following_rates_init))

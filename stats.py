@@ -20,6 +20,8 @@ class AgentStats:
             'utilities': self.utilities,
             'utility_change': self.utility_change,
             'optimization_times': self.optimization_times,
+            'agent': self.agent.to_dict(),
+            'index': self.agent.index,
         }
 
 class ConsumerStats(AgentStats):
@@ -66,6 +68,19 @@ class ConsumerStats(AgentStats):
             'rate_change': self.rate_change,
         }
 
+    @staticmethod
+    def from_dict(consumer_stats_dict: dict, market: 'ContentMarket'):
+        consumer_dict = consumer_stats_dict['agent']
+        consumer = Consumer.from_dict(consumer_dict, market)
+        consumer_stats = ConsumerStats(consumer, market)
+        consumer_stats.utilities = consumer_stats_dict['utilities']
+        consumer_stats.utility_change = consumer_stats_dict['utility_change']
+        consumer_stats.optimization_times = consumer_stats_dict['optimization_times']
+        consumer_stats.following_rates = consumer_stats_dict['following_rates']
+        consumer_stats.attention_used = consumer_stats_dict['attention_used']
+        consumer_stats.rate_change = consumer_stats_dict['rate_change']
+        return consumer_stats
+
 class ProducerStats(AgentStats):
 
     def __init__(self, producer: Producer, market: 'ContentMarket'):
@@ -94,6 +109,19 @@ class ProducerStats(AgentStats):
             'topic_distance': self.topic_distance,
         }
 
+    @staticmethod
+    def from_dict(producer_stats_dict: dict, market: 'ContentMarket'):
+        producer_dict = producer_stats_dict['agent']
+        producer = Producer.from_dict(producer_dict, market)
+        producer_stats = ProducerStats(producer, market)
+        producer_stats.utilities = producer_stats_dict['utilities']
+        producer_stats.utility_change = producer_stats_dict['utility_change']
+        producer_stats.optimization_times = producer_stats_dict['optimization_times']
+        producer_stats.topics = producer_stats_dict['topics']
+        producer_stats.topic_change = producer_stats_dict['topic_change']
+        producer_stats.topic_distance = producer_stats_dict['topic_distance']
+        return producer_stats
+
 class InfluencerStats(AgentStats):
 
     def __init__(self, influencer: Influencer, market: 'ContentMarket'):
@@ -121,6 +149,19 @@ class InfluencerStats(AgentStats):
             'attention_used': self.attention_used,
             'rate_change': self.rate_change,
         }
+
+    @staticmethod
+    def from_dict(influencer_stats_dict: dict, market: 'ContentMarket'):
+        influencer_dict = influencer_stats_dict['agent']
+        influencer = Influencer.from_dict(influencer_dict, market)
+        influencer_stats = InfluencerStats(influencer, market)
+        influencer_stats.utilities = influencer_stats_dict['utilities']
+        influencer_stats.utility_change = influencer_stats_dict['utility_change']
+        influencer_stats.optimization_times = influencer_stats_dict['optimization_times']
+        influencer_stats.following_rates = influencer_stats_dict['following_rates']
+        influencer_stats.attention_used = influencer_stats_dict['attention_used']
+        influencer_stats.rate_change = influencer_stats_dict['rate_change']
+        return influencer_stats
 
 class TestStats:
 
@@ -241,4 +282,26 @@ class TestStats:
             'influencer_stats': {influencer.index: self.influencer_stats[influencer.index].to_dict() for influencer in self.market.influencers},
             'optimization_time': self.optimization_time,
             'optimization_times': self.optimization_times,
+            'market': self.market.to_dict(),
         }
+
+    @staticmethod
+    def from_dict(test_stats_dict: dict):
+        market_dict = test_stats_dict['market']
+        market = ContentMarket.from_dict(market_dict)
+        test_stats = TestStats(market)
+        test_stats.num_iterations = test_stats_dict['num_iterations']
+        test_stats.total_consumer_utility = test_stats_dict['total_consumer_utility']
+        test_stats.total_producer_utility = test_stats_dict['total_producer_utility']
+        test_stats.total_influencer_utility = test_stats_dict['total_influencer_utility']
+        test_stats.total_social_welfare = test_stats_dict['total_social_welfare']
+        test_stats.average_consumer_rate_change = test_stats_dict['average_consumer_rate_change']
+        test_stats.average_producer_topic_change = test_stats_dict['average_producer_topic_change']
+        test_stats.average_influencer_rate_change = test_stats_dict['average_influencer_rate_change']
+        test_stats.average_consumer_utility_change = test_stats_dict['average_consumer_utility_change']
+        test_stats.average_producer_utility_change = test_stats_dict['average_producer_utility_change']
+        test_stats.average_influencer_utility_change = test_stats_dict['average_influencer_utility_change']
+        test_stats.consumer_stats = {index: ConsumerStats.from_dict(consumer_stats_dict, market) for index, consumer_stats_dict in test_stats_dict['consumer_stats'].items()}
+        test_stats.producer_stats = {index: ProducerStats.from_dict(producer_stats_dict, market) for index, producer_stats_dict in test_stats_dict['producer_stats'].items()}
+        test_stats.influencer_stats = {index: InfluencerStats.from_dict(influencer_stats_dict, market) for index, influencer_stats_dict in test_stats_dict['influencer_stats'].items()}
+        return test_stats

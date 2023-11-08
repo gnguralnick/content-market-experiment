@@ -7,8 +7,8 @@ import numpy as np
 
 class Producer(Agent):
 
-    def __init__(self, topic_interest_function):
-        Agent.__init__(self)
+    def __init__(self, topic_interest_function, optimize_tolerance = None):
+        Agent.__init__(self, optimize_tolerance)
 
         self.main_interest = None
         self.topic_produced = None
@@ -25,6 +25,7 @@ class Producer(Agent):
         center: the producer will produce content about the center of the market
         opposite: the producer will produce content about the opposite of its main interest
         farthest: the producer will produce content about the farthest topic from its main interest
+        closest_bound: the producer will produce content about the closest topic along the bounds of the market
         """
         if position == 'main' or position is None:
             self.topic_produced = self.main_interest
@@ -44,6 +45,16 @@ class Producer(Agent):
                     topic[i] = self.market.topics_bounds[i][1]
                 else:
                     topic[i] = self.market.topics_bounds[i][0]
+            self.topic_produced = topic
+        elif position == 'closest_bound':
+            topic = np.zeros(self.market.topics_dim)
+            for i in range(self.market.topics_dim):
+                if self.main_interest[i] < self.market.topics_bounds[i][0]:
+                    topic[i] = self.market.topics_bounds[i][0]
+                elif self.main_interest[i] > self.market.topics_bounds[i][1]:
+                    topic[i] = self.market.topics_bounds[i][1]
+                else:
+                    topic[i] = self.main_interest[i]
             self.topic_produced = topic
         else:
             raise ValueError("Invalid position for producer reset.")
@@ -91,3 +102,22 @@ class Producer(Agent):
             direct_consumer_reward += production_rate * consumer_interest * delay
 
         return influencer_reward + direct_consumer_reward
+
+    def to_dict(self):
+        producer_dict = Agent.to_dict(self)
+        producer_dict['main_interest'] = self.main_interest
+        producer_dict['topic_produced'] = self.topic_produced
+
+        return producer_dict
+
+    @staticmethod
+    def from_dict(producer_dict: dict, market: 'ContentMarket'):
+        producer = Producer(lambda x: x)
+        producer.market = market
+        market.add_agent(producer)
+        producer.index = producer_dict['index']
+        producer._following_rates = producer_dict['following_rates']
+        producer.main_interest = producer_dict['main_interest']
+        producer.topic_produced = producer_dict['topic_produced']
+
+        return producer

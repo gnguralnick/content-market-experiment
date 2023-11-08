@@ -8,8 +8,8 @@ import numpy as np
 
 class Influencer(Agent):
 
-    def __init__(self, attention_bound, delay_sensitivity, init_following_rates_method: str = 'random'):
-        Agent.__init__(self)
+    def __init__(self, attention_bound, delay_sensitivity, init_following_rates_method: str = 'random', optimize_tolerance = None):
+        Agent.__init__(self, optimize_tolerance)
         
         self.attention_bound = attention_bound
         self.delay_sensitivity = delay_sensitivity
@@ -35,7 +35,8 @@ class Influencer(Agent):
                     continue
                 self._following_rates[agent.index] = self.attention_bound / num_producers
         elif self.init_following_rates_method == 'zero':
-            pass
+            self._following_rates = {agent.index: 1e-1 for agent in self.market.agents}
+            self._following_rates['external'] = 1e-1
         else:
             raise ValueError("Unknown init_following_rates_method.")
 
@@ -81,3 +82,20 @@ class Influencer(Agent):
 
                 reward += production_rate * consumer_interest * delay
         return reward
+
+    def to_dict(self):
+        influencer_dict = Agent.to_dict(self)
+        influencer_dict['attention_bound'] = self.attention_bound
+        influencer_dict['delay_sensitivity'] = self.delay_sensitivity
+        influencer_dict['init_following_rates_method'] = self.init_following_rates_method
+
+        return influencer_dict
+
+    @staticmethod
+    def from_dict(influencer_dict: dict, market: 'ContentMarket'):
+        influencer = Influencer(influencer_dict['attention_bound'], influencer_dict['delay_sensitivity'], influencer_dict['init_following_rates_method'])
+        influencer.market = market
+        market.add_agent(influencer)
+        influencer.index = influencer_dict['index']
+        influencer._following_rates = influencer_dict['following_rates']
+        return influencer

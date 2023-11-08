@@ -5,10 +5,11 @@ if TYPE_CHECKING:
     from content_market import ContentMarket
 
 class Agent(ABC):
-    def __init__(self):
+    def __init__(self, optimize_tolerance: float | None = None):
         self.market = None
         self.index = None
         self._following_rates = dict()
+        self.optimize_tolerance = optimize_tolerance
 
     def set_market(self, market: 'ContentMarket', index: int):
         self.market = market
@@ -86,3 +87,9 @@ class Agent(ABC):
         For a consumer, x could be the following rate vector.
         """
         return -1 * self.utility(x, *args)
+
+    def to_dict(self) -> dict:
+        """
+        Return a dictionary representation of the agent.
+        """
+        return {'following_rates': self.following_rates, 'index': self.index, 'optimize_tolerance': self.optimize_tolerance}

@@ -8,8 +8,8 @@ if TYPE_CHECKING:
 
 
 class Consumer(Agent):
-    def __init__(self, topic_interest_function: Callable[[float], float], attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method: str = 'random'):
-        Agent.__init__(self)
+    def __init__(self, topic_interest_function: Callable[[float], float], attention_bound, external_interest_prob, delay_sensitivity, init_following_rates_method: str = 'random', optimize_tolerance = None):
+        Agent.__init__(self, optimize_tolerance)
         self.main_interest = None
 
         self._consumption_topic_interest_function = topic_interest_function
@@ -43,7 +43,8 @@ class Consumer(Agent):
             
             self._following_rates['external'] = self.attention_bound / (num_producers_or_influencers + 1)
         elif self.init_following_rates_method == 'zero':
-            pass
+            self._following_rates = {agent.index: 1e-1 for agent in self.market.agents}
+            self._following_rates['external'] = 1e-1
         else:
             raise ValueError("Unknown init_following_rates_method.")
 
@@ -119,3 +120,23 @@ class Consumer(Agent):
             external_reward = external_production_rate * self.external_interest_prob * np.exp(-self.delay_sensitivity * (1 / following_rate_vector[-1]))
 
         return influencer_reward + direct_following_reward + external_reward
+    
+    def to_dict(self) -> dict:
+        consumer_dict = Agent.to_dict(self)
+        consumer_dict['main_interest'] = self.main_interest.tolist()
+        consumer_dict['attention_bound'] = self.attention_bound
+        consumer_dict['external_interest_prob'] = self.external_interest_prob
+        consumer_dict['delay_sensitivity'] = self.delay_sensitivity
+        consumer_dict['init_following_rates_method'] = self.init_following_rates_method
+        return consumer_dict
+
+    @staticmethod
+    def from_dict(consumer_dict: dict, market: 'ContentMarket'):
+        consumer = Consumer(lambda x: x, consumer_dict['attention_bound'], consumer_dict['external_interest_prob'], consumer_dict['delay_sensitivity'], consumer_dict['init_following_rates_method'])
+        consumer.main_interest = np.array(consumer_dict['main_interest'])
+        consumer.market = market
+        market.add_agent(consumer)
+        consumer.index = consumer_dict['index']
+        consumer.following_rates = consumer_dict['_following_rates']
+        consumer.optimize_tolerance = consumer_dict['optimize_tolerance']
+        return consumer
