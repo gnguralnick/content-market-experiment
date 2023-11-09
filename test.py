@@ -11,6 +11,7 @@ def test(topics: np.ndarray | list[np.ndarray], varied_param: str, num_agents: i
          init_following_rates_method: str | list[str] = 'random', init_interest_method: str = 'random',
          init_topic_produced_method: str | list[str] = 'main',
          production_rate: float | list[float] = 1, external_production_rate: float | list[float] = 1,
+         basinhop: bool = False,
          use_imperfect_information: bool = False):
     """
     Test the market with the given parameters.
@@ -60,7 +61,7 @@ def test(topics: np.ndarray | list[np.ndarray], varied_param: str, num_agents: i
         # initialize the market
         market.finalize(method=init_interest_method)
         # run the market
-        test_stats = market.optimize(topic_position=topic_produced_init)
+        test_stats = market.optimize(topic_position=topic_produced_init, basinhop=basinhop)
         perfect_info_stats.append(test_stats)
     if use_imperfect_information:
         for combo in param_combinations:
@@ -80,7 +81,7 @@ def test(topics: np.ndarray | list[np.ndarray], varied_param: str, num_agents: i
             # initialize the market
             market.finalize(method=init_interest_method)
             # run the market
-            test_stats = market.optimize(topic_position=topic_produced_init)
+            test_stats = market.optimize(topic_position=topic_produced_init, basinhop=basinhop)
             imperfect_info_stats.append(test_stats)
             
     return perfect_info_stats, imperfect_info_stats

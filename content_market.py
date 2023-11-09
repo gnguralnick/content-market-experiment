@@ -144,7 +144,7 @@ class ContentMarket:
         """
         return np.array([np.random.uniform(self.topics_bounds[i, 0], self.topics_bounds[i, 1]) for i in range(self.topics_dim)])
 
-    def optimize(self, max_iterations=100, converge_tol=1e-3, topic_position=None) -> TestStats:
+    def optimize(self, max_iterations=100, converge_tol=1e-3, topic_position=None, basinhop=False) -> TestStats:
         """
         Optimize the market. This is done by iteratively optimizing the utility functions of the producers, consumers, and influencers.
         """
@@ -177,7 +177,8 @@ class ContentMarket:
                         args=(self.production_rate, self.external_production_rate, OptimizationTargets.CONSUMER),
                         constraints=attention_constraint,
                         bounds=consumer.get_following_rate_bounds(),
-                        tol=consumer.optimize_tolerance
+                        tol=consumer.optimize_tolerance,
+                        basinhop=basinhop
                     )
 
                     if not result.success:
@@ -203,7 +204,8 @@ class ContentMarket:
                         args=(self.production_rate, self.external_production_rate, OptimizationTargets.INFLUENCER),
                         constraints=attention_constraint,
                         bounds=influencer.get_following_rate_bounds(),
-                        tol=influencer.optimize_tolerance
+                        tol=influencer.optimize_tolerance,
+                        basinhop=basinhop
                     )
 
                     if not result.success:
@@ -224,10 +226,11 @@ class ContentMarket:
                     result = minimize_with_retry(
                         fun=producer.minimization_utility,
                         x0=producer.topic_produced,
-                        args=(self.production_rate, self.external_production_rate, OptimizationTargets.PRODUCER),
+                        args=(self.production_rate, self.external_production_rate, OptimizationTargets.PRODUCER, basinhop),
                         bounds=self.topics_bounds,
                         num_retry=2,
-                        tol=producer.optimize_tolerance
+                        tol=producer.optimize_tolerance,
+                        basinhop=basinhop
                     )
 
                     if not result.success:

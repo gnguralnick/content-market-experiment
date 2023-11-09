@@ -20,16 +20,29 @@ class OptimizationTargets(Enum):
 
 import scipy.optimize as opt
 
-def minimize_with_retry(fun, x0, args, constraints=None, bounds=None, tol=None, num_retry=1):
-    result = opt.minimize(
-        fun=fun,
-        x0=x0,
-        args=args,
-        constraints=constraints,
-        bounds=bounds,
-        #options={'maxiter': 1000},
-        tol=tol
-    )
+def minimize_with_retry(fun, x0, args, constraints=None, bounds=None, tol=None, num_retry=1, basinhop=False):
+    if not basinhop:
+        result = opt.minimize(
+            fun=fun,
+            x0=x0,
+            args=args,
+            constraints=constraints,
+            bounds=bounds,
+            #options={'maxiter': 1000},
+            tol=tol
+        )
+    else:
+        result = opt.basinhopping(
+            func=fun,
+            x0=x0,
+            niter=100,
+            minimizer_kwargs={
+                'args': args,
+                'constraints': constraints,
+                'bounds': bounds,
+                'tol': tol,
+            }
+        )
 
     retries = 0
     while not result.success and retries < num_retry:
