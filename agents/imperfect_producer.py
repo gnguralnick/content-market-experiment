@@ -17,7 +17,6 @@ class ImperfectInformationProducer(Producer):
             raise ValueError("Producer has no market.")
         production_rate = cast(float, args[0])
         external_production_rate = cast(float, args[1])
-        basinhop = cast(bool, args[3])
 
         prev_topic = self.topic_produced
         self.topic_produced = topic
@@ -33,8 +32,7 @@ class ImperfectInformationProducer(Producer):
                 x0=influencer.get_following_rate_vector(),
                 args=(production_rate, external_production_rate, OptimizationTargets.INFLUENCER),
                 constraints=attention_constraint,
-                bounds=influencer.get_following_rate_bounds(),
-                basinhop=basinhop
+                bounds=influencer.get_following_rate_bounds()
             )
 
             if not result.success:

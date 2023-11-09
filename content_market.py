@@ -226,7 +226,7 @@ class ContentMarket:
                     result = minimize_with_retry(
                         fun=producer.minimization_utility,
                         x0=producer.topic_produced,
-                        args=(self.production_rate, self.external_production_rate, OptimizationTargets.PRODUCER, basinhop),
+                        args=(self.production_rate, self.external_production_rate, OptimizationTargets.PRODUCER),
                         bounds=self.topics_bounds,
                         num_retry=2,
                         tol=producer.optimize_tolerance,
