@@ -1,3 +1,4 @@
+from typing import Sequence
 import matplotlib.pyplot as plt
 import matplotlib._color_data as mcd
 palette = list(mcd.XKCD_COLORS.values())[::10]
@@ -21,7 +22,7 @@ def get_agent_title(agent: Agent):
     elif isinstance(agent, Influencer):
         return "Influencer {}".format(agent.index)
 
-def plot_topic_distribution_histogram(title, agents: list[Consumer | Producer], min_topic, max_topic, bins=50):
+def plot_topic_distribution_histogram(title, agents: Sequence[Consumer | Producer], min_topic, max_topic, bins=50):
     if len(agents) == 0:
         return
     plt.figure()
@@ -33,7 +34,7 @@ def plot_topic_distribution_histogram(title, agents: list[Consumer | Producer], 
     plt.xlim(min_topic, max_topic)
     plt.show()
 
-def plot_consumer_topic_interest_distributions(title, agents: list[Consumer], min_topic, max_topic, agent_colors):
+def plot_consumer_topic_interest_distributions(title, agents: Sequence[Consumer], min_topic, max_topic, agent_colors):
     if len(agents) == 0:
         return
     plt.figure()
@@ -45,7 +46,7 @@ def plot_consumer_topic_interest_distributions(title, agents: list[Consumer], mi
     plt.ylim(0, 1.1)
     plt.show()
 
-def plot_producer_topic_probability_distributions(title, agents: list[Producer], min_topic, max_topic, agent_colors):
+def plot_producer_topic_probability_distributions(title, agents: Sequence[Producer], min_topic, max_topic, agent_colors):
     if len(agents) == 0:
         return
     plt.figure()
@@ -57,7 +58,7 @@ def plot_producer_topic_probability_distributions(title, agents: list[Producer],
     plt.ylim(0, 1.1)
     plt.show()
 
-def plot_agent_utility_by_iteration(title, agents: list[Agent], agent_colors, agent_stats: dict[int, AgentStats], averages=None):
+def plot_agent_utility_by_iteration(title, agents: Sequence[Agent], agent_colors, agent_stats: dict[int, AgentStats], averages=None):
     if len(agents) == 0:
         return
     plt.figure()
@@ -70,7 +71,7 @@ def plot_agent_utility_by_iteration(title, agents: list[Agent], agent_colors, ag
     plt.xticks(range(0, len(agent_stats[agents[0].index].utilities)))
     plt.show()
 
-def plot_agent_utility_change_by_iteration(title, agents: list[Agent], agent_colors, agent_stats: dict[int, AgentStats], averages=None):
+def plot_agent_utility_change_by_iteration(title, agents: Sequence[Agent], agent_colors, agent_stats: dict[int, AgentStats], averages=None):
     if len(agents) == 0:
         return
     plt.figure()
@@ -83,7 +84,7 @@ def plot_agent_utility_change_by_iteration(title, agents: list[Agent], agent_col
     plt.xticks(range(0, len(agent_stats[agents[0].index].utility_change)))
     plt.show()
 
-def plot_attention_used_by_iteration(title, agents: list[Consumer | Influencer], agent_colors, agent_stats: dict[int, ConsumerStats | InfluencerStats], averages=None):
+def plot_attention_used_by_iteration(title, agents: Sequence[Consumer | Influencer], agent_colors, agent_stats: dict[int, ConsumerStats | InfluencerStats], averages=None):
     if len(agents) == 0:
         return
     plt.figure()
@@ -97,7 +98,7 @@ def plot_attention_used_by_iteration(title, agents: list[Consumer | Influencer],
     plt.ylim(0, max(agent.attention_bound for agent in agents) + 1)
     plt.show()
 
-def plot_producer_topic_produced_by_iteration(title, producers: list[Producer], consumers: list[Consumer], agent_colors, agent_stats: dict[int, ProducerStats], show_consumer_main_interest=True):
+def plot_producer_topic_produced_by_iteration(title, producers: Sequence[Producer], consumers: Sequence[Consumer], agent_colors, agent_stats: dict[int, ProducerStats], show_consumer_main_interest=True):
     if len(producers) == 0:
         return
     plt.figure()
@@ -112,7 +113,7 @@ def plot_producer_topic_produced_by_iteration(title, producers: list[Producer], 
     plt.xticks(range(len(agent_stats[producers[0].index].topics)))
     plt.show()
 
-def plot_following_rate_change_by_iteration(title, agents: list[Consumer | Influencer], agent_colors, agent_stats: dict[int, ConsumerStats | InfluencerStats], averages=None):
+def plot_following_rate_change_by_iteration(title, agents: Sequence[Consumer | Influencer], agent_colors, agent_stats: dict[int, ConsumerStats | InfluencerStats], averages=None):
     if len(agents) == 0:
         return
     plt.figure()
@@ -125,7 +126,7 @@ def plot_following_rate_change_by_iteration(title, agents: list[Consumer | Influ
     plt.xticks(range(0, len(agent_stats[agents[0].index].rate_change)))
     plt.show()
 
-def plot_producer_topic_change_by_iteration(title, producers: list[Producer], agent_colors, agent_stats: dict[int, ProducerStats], averages=None):
+def plot_producer_topic_change_by_iteration(title, producers: Sequence[Producer], agent_colors, agent_stats: dict[int, ProducerStats], averages=None):
     if len(producers) == 0:
         return
     plt.figure()
@@ -145,7 +146,7 @@ def plot_total_social_welfare_by_iteration(title, stats: TestStats):
     plt.xticks(range(0, stats.num_iterations))
     plt.show()
 
-def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consumer], producers: list[Producer], agent_colors, agent_stats: dict[int, ConsumerStats], averages=None):
+def plot_following_rate_by_main_interest_closeness(title, consumers: Sequence[Consumer], producers: Sequence[Producer], agent_colors, agent_stats: dict[int, ConsumerStats], averages=None):
     if len(consumers) == 0 or len(producers) == 0:
         return
     plt.figure()
@@ -167,7 +168,7 @@ def plot_following_rate_by_main_interest_closeness(title, consumers: list[Consum
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.show()
 
-def plot_following_rates_by_iteration(agents: list[Consumer | Influencer], follows: list[Producer | Influencer], agent_colors, agent_stats: dict[int, ConsumerStats | InfluencerStats]):
+def plot_following_rates_by_iteration(agents: Sequence[Consumer | Influencer], follows: Sequence[Producer | Influencer], agent_colors, agent_stats: dict[int, ConsumerStats | InfluencerStats]):
     if len(agents) == 0 or len(follows) == 0:
         return
     fig = plt.figure(figsize=(5, 5 * len(agents)))
@@ -188,7 +189,7 @@ def plot_following_rates_by_iteration(agents: list[Consumer | Influencer], follo
         ax.label_outer()
     plt.show()
 
-def plot_agent_following_rates(agents: list[Consumer | Influencer], agent_stats: dict[int, ConsumerStats | InfluencerStats], agent_colors):
+def plot_agent_following_rates(agents: Sequence[Consumer | Influencer], agent_stats: dict[int, ConsumerStats | InfluencerStats], agent_colors):
     if len(agents) == 0:
         return
     fig = plt.figure(figsize=(5, 5 * len(agents)))
@@ -216,7 +217,7 @@ def plot_agent_following_rates(agents: list[Consumer | Influencer], agent_stats:
         ax.set_xlabel('Topic')
     plt.show()
 
-def plot_follows_by_iteration(agents: list[Producer | Influencer], followers: list[Consumer | Influencer], agent_colors, agent_stats: dict[int, ConsumerStats | InfluencerStats]):
+def plot_follows_by_iteration(agents: Sequence[Producer | Influencer], followers: Sequence[Consumer | Influencer], agent_colors, agent_stats: dict[int, ConsumerStats | InfluencerStats]):
     if len(agents) == 0 or len(followers) == 0:
         return
     fig = plt.figure(figsize=(5, 5 * len(agents)))
@@ -250,7 +251,7 @@ def plot_ending_value_by_test(title, perfect_info_stats: list[TestStats], imperf
     plt.xlim(min(varied_values), max(varied_values))
     plt.show()
 
-def plot_agent_following_rates_by_test(index: int, stats: list[dict[int, ConsumerStats | InfluencerStats]], varied_param, varied_values):
+def plot_agent_following_rates_by_test(index: int, stats: Sequence[dict[int, ConsumerStats | InfluencerStats]], varied_param, varied_values):
     plt.figure()
     plt.title(f"Following rates for {get_agent_title(stats[0][index].agent)}")
     topics_bounds = stats[0][index].agent.market.topics_bounds[0]
@@ -340,7 +341,7 @@ def plot_value_by_iteration_by_test(title, stats: list[TestStats], value_name, v
     plt.xticks(range(max(test.num_iterations for test in stats)))
     plt.show()
 
-def plot_producer_topic_distance_from_main_interest_by_iteration(title, producers: list[Producer], agent_colors, agent_stats: dict[int, ProducerStats], averages=None):
+def plot_producer_topic_distance_from_main_interest_by_iteration(title, producers: Sequence[Producer], agent_colors, agent_stats: dict[int, ProducerStats], averages=None):
     if len(producers) == 0:
         return
     plt.figure()
@@ -354,7 +355,7 @@ def plot_producer_topic_distance_from_main_interest_by_iteration(title, producer
     plt.show()
     
 
-def plot_follow_proportion_by_iteration(title, consumers: list[Consumer], agent_colors, agent_stats: dict[int, ConsumerStats], agent: str, averages=None):
+def plot_follow_proportion_by_iteration(title, consumers: Sequence[Consumer], agent_colors, agent_stats: dict[int, ConsumerStats], agent: str, averages=None):
     if len(consumers) == 0:
         return
     plt.figure()
