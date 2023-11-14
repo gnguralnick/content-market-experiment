@@ -290,6 +290,9 @@ def plot_cost_of_influence_by_test(title, perfect_info_stats: list[TestStats], i
     if not len(perfect_info_stats) == len(imperfect_info_stats):
         raise ValueError("Perfect and imperfect information stats must have the same length.")
     for i in range(len(perfect_info_stats)):
+        if perfect_info_stats[i].total_social_welfare[-1] == 0:
+            cost.append(0)
+            continue
         cost.append((perfect_info_stats[i].total_social_welfare[-1] - imperfect_info_stats[i].total_social_welfare[-1]) / perfect_info_stats[i].total_social_welfare[-1] * 100)
     plt.plot(varied_values, cost)
     plt.xlim(min(varied_values), max(varied_values))

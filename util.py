@@ -35,7 +35,7 @@ def minimize_with_retry(fun, x0, args, constraints=None, bounds=None, tol=None, 
         result = opt.basinhopping(
             func=fun,
             x0=x0,
-            niter=100,
+            niter=30,
             minimizer_kwargs={
                 'args': args,
                 'constraints': constraints,
