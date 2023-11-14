@@ -158,13 +158,15 @@ def plot_following_rate_by_main_interest_closeness(title, consumers: Sequence[Co
     for consumer in consumers:
         interest_closeness = []
         following_rate = []
+        #for producer in sorted(producers, key=lambda p: consumer.main_interest[0] - p.main_interest[0]):#
         for producer in sorted(producers, key=lambda p: np.linalg.norm(consumer.main_interest - p.main_interest)):
             if producer == consumer:
                 continue
             ending_rate = agent_stats[consumer.index].following_rates[-1][producer.index] / consumer.attention_bound * 100
             interest_closeness.append(np.linalg.norm(consumer.main_interest - producer.main_interest))
+            #interest_closeness.append(consumer.main_interest[0] - producer.main_interest[0])
             following_rate.append(ending_rate)
-        plt.plot(interest_closeness, following_rate, label='Consumer {}'.format(consumer.index), color=agent_colors[consumer.index], marker='o')
+        plt.plot(interest_closeness, following_rate, label='Consumer {} - Main Interest {}'.format(consumer.index, consumer.main_interest), color=agent_colors[consumer.index], marker='o')
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.show()
 
@@ -189,7 +191,7 @@ def plot_following_rates_by_iteration(agents: Sequence[Consumer | Influencer], f
         ax.label_outer()
     plt.show()
 
-def plot_agent_following_rates(agents: Sequence[Consumer | Influencer], agent_stats: dict[int, ConsumerStats | InfluencerStats], agent_colors):
+def plot_agent_following_rates(agents: Sequence[Consumer | Influencer], agent_stats: dict[int, ConsumerStats | InfluencerStats], agent_colors, show_inf=False, show_ext=False):
     if len(agents) == 0:
         return
     fig = plt.figure(figsize=(5, 5 * len(agents)))
@@ -208,8 +210,10 @@ def plot_agent_following_rates(agents: Sequence[Consumer | Influencer], agent_st
         
         if isinstance(agent, Consumer):
             ax.axvline(agent.main_interest[0], color='black', linestyle='--', label='Consumer main interest')
-            #ax.axhline(agent_stats[agent.index].following_rates[-1][-1] / agent.attention_bound * 100, color='black', linestyle='--', label='External')
-            #ax.axhline(agent_stats[agent.index].following_rates[-1][-2] / agent.attention_bound * 100, color='blue', linestyle='--', label='Influencer')
+            if show_ext:
+                ax.axhline(agent_stats[agent.index].following_rates[-1][-1] / agent.attention_bound * 100, color='black', linestyle='--', label='External')
+            if show_inf:
+                ax.axhline(agent_stats[agent.index].following_rates[-1][-2] / agent.attention_bound * 100, color='blue', linestyle='--', label='Influencer')
 
         
         ax.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
